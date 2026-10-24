@@ -8,8 +8,11 @@ import { UserManagementCard } from "@/components/profile/user-management-card";
 export default function ProfilePage() {
   const router = useRouter();
 
-  function handleLogout() {
-    // Later: await supabase.auth.signOut()
+  async function handleLogout() {
+    const { supabase } = await import("@/lib/supabase");
+    await supabase.auth.signOut();
+    // Clear session cookie
+    document.cookie = "sb-access-token=; path=/; max-age=0";
     router.push("/login");
   }
 

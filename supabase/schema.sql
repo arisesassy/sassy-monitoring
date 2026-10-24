@@ -2,6 +2,17 @@
 -- Run this in Supabase SQL Editor: https://app.supabase.com/project/_/sql
 
 -- =====================================================
+-- Function: Auto-update updated_at timestamp
+-- =====================================================
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =====================================================
 -- Table: telemetry
 -- Purpose: Store real-time telemetry data from ESP32
 -- =====================================================
@@ -46,7 +57,7 @@ CREATE POLICY "Allow public read on telemetry"
   ON telemetry FOR SELECT
   USING (true);
 
--- Policy: Allow authenticated insert (ESP32 authenticated via anon key)
+-- Policy: Allow authenticated/anon insert (ESP32 via anon key)
 CREATE POLICY "Allow public insert on telemetry"
   ON telemetry FOR INSERT
   WITH CHECK (true);
@@ -54,7 +65,7 @@ CREATE POLICY "Allow public insert on telemetry"
 -- Enable Realtime for telemetry table
 ALTER PUBLICATION supabase_realtime ADD TABLE telemetry;
 
--- Index for faster session queries
+-- Indexes for faster session queries
 CREATE INDEX IF NOT EXISTS telemetry_session_id_idx ON telemetry(session_id);
 CREATE INDEX IF NOT EXISTS telemetry_timestamp_idx ON telemetry(timestamp DESC);
 
@@ -77,11 +88,13 @@ CREATE TABLE IF NOT EXISTS pid_parameters (
   -- Metadata
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  created_by VARCHAR(100), -- Admin username or 'fastapi-training'
-  
-  -- Only one active PID per material_type
-  CONSTRAINT unique_active_pid UNIQUE (material_type, status) DEFERRABLE INITIALLY DEFERRED
+  created_by VARCHAR(100) -- Admin username or 'fastapi-training'
 );
+
+-- Only one active PID parameter per material_type
+CREATE UNIQUE INDEX IF NOT EXISTS unique_active_pid_idx 
+  ON pid_parameters (material_type) 
+  WHERE status = 'active';
 
 -- Enable RLS
 ALTER TABLE pid_parameters ENABLE ROW LEVEL SECURITY;
@@ -91,7 +104,7 @@ CREATE POLICY "Allow public read on pid_parameters"
   ON pid_parameters FOR SELECT
   USING (true);
 
--- Policy: Allow authenticated insert/update (dashboard admin or FastAPI)
+-- Policy: Allow write (dashboard admin or FastAPI)
 CREATE POLICY "Allow authenticated write on pid_parameters"
   ON pid_parameters FOR ALL
   USING (true)
@@ -103,6 +116,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE pid_parameters;
 -- Index for faster queries
 CREATE INDEX IF NOT EXISTS pid_parameters_material_status_idx 
   ON pid_parameters(material_type, status);
+
+-- Trigger auto updated_at
+CREATE TRIGGER update_pid_parameters_updated_at
+  BEFORE UPDATE ON pid_parameters
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
 
 -- =====================================================
 -- Table: sessions
@@ -134,7 +153,7 @@ CREATE POLICY "Allow public read on sessions"
   ON sessions FOR SELECT
   USING (true);
 
--- Policy: Allow authenticated write
+-- Policy: Allow write
 CREATE POLICY "Allow authenticated write on sessions"
   ON sessions FOR ALL
   USING (true)
@@ -144,30 +163,15 @@ CREATE POLICY "Allow authenticated write on sessions"
 CREATE INDEX IF NOT EXISTS sessions_started_at_idx ON sessions(started_at DESC);
 
 -- =====================================================
--- Initial Data: Seed active PID parameters
+-- Initial Data: Seed active PID parameters (idempotent)
 -- =====================================================
 INSERT INTO pid_parameters (material_type, kp, ki, kd, status, created_by)
-VALUES
-  ('Kain', 8.0, 0.08, 10.0, 'active', 'system-init'),
-  ('Kulit', 6.5, 0.05, 8.0, 'active', 'system-init')
-ON CONFLICT (material_type, status) DO NOTHING;
+SELECT 'Kain', 8.0, 0.08, 10.0, 'active', 'system-init'
+WHERE NOT EXISTS (SELECT 1 FROM pid_parameters WHERE material_type = 'Kain' AND status = 'active');
 
--- =====================================================
--- Function: Auto-update updated_at timestamp
--- =====================================================
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger for pid_parameters
-CREATE TRIGGER update_pid_parameters_updated_at
-  BEFORE UPDATE ON pid_parameters
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+INSERT INTO pid_parameters (material_type, kp, ki, kd, status, created_by)
+SELECT 'Kulit', 6.5, 0.05, 8.0, 'active', 'system-init'
+WHERE NOT EXISTS (SELECT 1 FROM pid_parameters WHERE material_type = 'Kulit' AND status = 'active');
 
 -- =====================================================
 -- Success message

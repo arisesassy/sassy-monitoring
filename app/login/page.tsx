@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState("admin_operator");
-  const [password, setPassword] = useState("password123");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -17,16 +17,27 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
 
-    // Dummy auth check — later replace with supabase.auth.signInWithPassword()
-    setTimeout(() => {
-      if (username && password) {
-        setIsLoading(false);
-        router.push("/dashboard");
-      } else {
-        setIsLoading(false);
-        setError("Username dan kata sandi wajib diisi");
-      }
-    }, 600);
+    const { supabase } = await import("@/lib/supabase");
+
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email: username,
+      password: password,
+    });
+
+    if (authError) {
+      setIsLoading(false);
+      setError(authError.message === "Invalid login credentials" 
+        ? "Email atau kata sandi salah"
+        : authError.message);
+      return;
+    }
+
+    if (data.session) {
+      // Store session token in cookie for middleware
+      document.cookie = `sb-access-token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+      setIsLoading(false);
+      router.push("/dashboard");
+    }
   }
 
   return (
@@ -110,12 +121,12 @@ export default function LoginPage() {
             {/* Field Username */}
             <div>
               <label className="block text-xs font-semibold text-[#485336] mb-2 tracking-wide">
-                Username / ID Admin
+                Email Admin
               </label>
               <div className="relative">
                 <input
-                  type="text"
-                  placeholder="Masukkan username admin"
+                  type="email"
+                  placeholder="admin@example.com"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full px-4 py-3 bg-[#FFFFFF] border border-[#D2D9C4] rounded-2xl text-sm text-[#2D361E] placeholder-[#A4AD97] focus:outline-none focus:border-[#6D7E43] focus:ring-2 focus:ring-[#6D7E43]/20 transition-all font-medium pr-10"

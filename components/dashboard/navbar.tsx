@@ -145,6 +145,12 @@ export function Navbar({ className }: NavbarProps) {
                 </Link>
                 <button
                   type="button"
+                  onClick={async () => {
+                    const { supabase } = await import("@/lib/supabase");
+                    await supabase.auth.signOut();
+                    document.cookie = "sb-access-token=; path=/; max-age=0";
+                    window.location.href = "/login";
+                  }}
                   className="w-full text-left px-4 py-2.5 text-xs font-medium text-[#D96B60] hover:bg-red-50 transition cursor-pointer"
                 >
                   Keluar
