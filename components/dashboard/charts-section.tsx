@@ -1,6 +1,17 @@
 "use client";
 
+import { useState } from "react";
+
 export function ChartsSection() {
+  const [progress] = useState(79); // Nilai persen proses (0 - 100)
+
+  // Hitung stroke-dasharray & stroke-dashoffset untuk busur setengah lingkaran
+  // Lingkaran penuh jari-jari r=75 -> keliling = 2 * PI * 75 ≈ 471.24
+  // Busur setengah lingkaran = PI * 75 ≈ 235.62
+  const radius = 75;
+  const arcLength = Math.PI * radius; // 235.62
+  const strokeDashoffset = arcLength * (1 - progress / 100);
+
   return (
     <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
       {/* Temperature vs Time Chart Card */}
@@ -40,29 +51,32 @@ export function ChartsSection() {
       {/* Process Progress Radial Gauge */}
       <div className="custom-card lg:col-span-5 p-7 shadow-sm flex flex-col justify-between min-h-[340px]">
         <h2 className="text-base font-semibold text-gray-700">Keseluruhan Proses</h2>
-        <div className="relative flex flex-col items-center justify-center my-auto pt-4">
+        <div className="relative flex flex-col items-center justify-center my-auto pt-6">
           {/* Semi Circle Svg Chart */}
-          <svg className="w-72 h-36" viewBox="0 0 200 100">
-            {/* Background Track */}
+          <svg className="w-72 h-38 overflow-visible" viewBox="0 0 200 110">
+            {/* Background Track (abu-abu/cream) */}
             <path
-              d="M 20 95 A 80 80 0 0 1 180 95"
+              d="M 25 100 A 75 75 0 0 1 175 100"
               fill="none"
               stroke="#E1E7D1"
-              strokeLinecap="butt"
-              strokeWidth="24"
+              strokeLinecap="round"
+              strokeWidth="20"
             />
-            {/* Active Value Track (Approx 79%) */}
+            {/* Active Value Track (strokeDashoffset pergerakan progres, animasi halus) */}
             <path
-              d="M 20 95 A 80 80 0 0 1 156 46"
+              d="M 25 100 A 75 75 0 0 1 175 100"
               fill="none"
               stroke="#687A3E"
-              strokeLinecap="butt"
-              strokeWidth="24"
+              strokeLinecap="round"
+              strokeWidth="20"
+              strokeDasharray={arcLength}
+              strokeDashoffset={strokeDashoffset}
+              className="transition-[stroke-dashoffset] duration-700 ease-out"
             />
           </svg>
           {/* Gauge Percentage Text */}
-          <div className="absolute bottom-0 flex items-baseline justify-center">
-            <span className="text-5xl font-extrabold text-[#536331] tracking-tight">79</span>
+          <div className="absolute bottom-1 flex items-baseline justify-center">
+            <span className="text-5xl font-extrabold text-[#536331] tracking-tight">{progress}</span>
             <span className="text-2xl font-bold text-[#536331] ml-0.5">%</span>
           </div>
         </div>
