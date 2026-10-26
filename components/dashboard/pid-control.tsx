@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 import { usePidParameters } from "@/lib/hooks/use-pid-parameters";
+import { useTelemetry } from "@/lib/hooks/use-telemetry";
+
+function safeNum(val: unknown, fallback: number): number {
+  const n = Number(val);
+  return Number.isFinite(n) ? n : fallback;
+}
 
 type PidRow = { kp: number; ki: number; kd: number };
 
@@ -57,7 +63,10 @@ function CompareRow({
 
 export function PidControl() {
   const [isTraining, setIsTraining] = useState(false);
+  const { telemetry } = useTelemetry();
   const { activeParams, pendingParams, hasPending, approvePending, rejectPending } = usePidParameters();
+
+  const pidOutput = safeNum(telemetry?.pid_output_percent, 36.0);
 
   async function handleUpdatePID() {
     setIsTraining(true);
@@ -83,7 +92,7 @@ export function PidControl() {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-base font-semibold text-gray-800">Kontrol PID</h2>
         <span className="bg-[#61713B] text-white text-[11px] font-medium px-2.5 py-0.5 rounded-full">
-          Output 36%
+          Output {Math.round(pidOutput)}%
         </span>
       </div>
 

@@ -11,6 +11,10 @@ export function ControlsSection() {
   const [duration, setDuration] = useState("120 menit");
   const [flipRoll, setFlipRoll] = useState("30 menit");
 
+  const machineStatus = telemetry?.machine_status || "Siap";
+  const burner1Active = Boolean(telemetry?.burner1_active);
+  const burner2Active = Boolean(telemetry?.burner2_active);
+
   return (
     <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
       {/* PID Control Column */}
@@ -116,7 +120,7 @@ export function ControlsSection() {
         <div className="custom-card p-6 shadow-sm flex flex-col justify-center h-[130px]">
           <h3 className="text-xs font-semibold text-gray-600 mb-1">Status Mesin</h3>
           <p className="text-3xl font-extrabold text-[#5B6C36] tracking-tight">
-            {telemetry.machine_status}
+            {machineStatus}
           </p>
         </div>
 
@@ -125,7 +129,7 @@ export function ControlsSection() {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs font-bold text-gray-700">Status Burner</h3>
             <span className="bg-[#6B7D41] text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
-              {telemetry.burner1_active || telemetry.burner2_active ? "Api terdeteksi" : "Mati"}
+              {burner1Active || burner2Active ? "Api terdeteksi" : "Mati"}
             </span>
           </div>
 
@@ -137,12 +141,12 @@ export function ControlsSection() {
             </div>
             <span
               className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
-                telemetry.burner1_active
+                burner1Active
                   ? "bg-[#6B7D41] text-white"
                   : "bg-[#D9DBD0] text-gray-600"
               }`}
             >
-              {telemetry.burner1_active ? "Aktif" : "Mati"}
+              {burner1Active ? "Aktif" : "Mati"}
             </span>
           </div>
 
@@ -154,12 +158,12 @@ export function ControlsSection() {
             </div>
             <span
               className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
-                telemetry.burner2_active
+                burner2Active
                   ? "bg-[#6B7D41] text-white"
                   : "bg-[#D9DBD0] text-gray-600"
               }`}
             >
-              {telemetry.burner2_active ? "Aktif" : "Mati"}
+              {burner2Active ? "Aktif" : "Mati"}
             </span>
           </div>
         </div>

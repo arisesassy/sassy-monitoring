@@ -2,9 +2,14 @@
 
 import { useTelemetry } from "@/lib/hooks/use-telemetry";
 
+function safeNum(val: unknown, fallback: number): number {
+  const n = Number(val);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 export function ChartsSection() {
   const { telemetry, historyPoints } = useTelemetry();
-  const progress = telemetry.process_progress;
+  const progress = safeNum(telemetry?.process_progress, 0);
 
   // Hitung stroke-dasharray & stroke-dashoffset untuk busur setengah lingkaran
   const radius = 75;
