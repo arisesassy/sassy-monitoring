@@ -1,18 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-// Dummy active PID params from Supabase (status: "active")
-const ACTIVE_PID = {
-  kain: { kp: 8.0, ki: 0.08, kd: 10.0 },
-  kulit: { kp: 6.5, ki: 0.05, kd: 8.0 },
-};
-
-// Dummy pending_review PID from FastAPI (status: "pending_review")
-const PENDING_PID = {
-  kain: { kp: 9.2, ki: 0.11, kd: 11.5 },
-  kulit: { kp: 7.1, ki: 0.07, kd: 9.3 },
-};
+import { usePidParameters } from "@/lib/hooks/use-pid-parameters";
 
 type PidRow = { kp: number; ki: number; kd: number };
 
@@ -67,25 +56,25 @@ function CompareRow({
 }
 
 export function PidControl() {
-  const [isPending, setIsPending] = useState(false);
   const [isTraining, setIsTraining] = useState(false);
+  const { activeParams, pendingParams, hasPending, approvePending, rejectPending } = usePidParameters();
 
-  function handleUpdatePID() {
+  async function handleUpdatePID() {
     setIsTraining(true);
-    // Simulate FastAPI call delay — replace with actual fetch()
+    // TODO: Panggil FastAPI endpoint untuk training PID
+    // const response = await fetch(process.env.NEXT_PUBLIC_FASTAPI_URL + '/train-pid', { method: 'POST' });
+    // Simulasi delay 2 detik
     setTimeout(() => {
       setIsTraining(false);
-      setIsPending(true);
-    }, 1800);
+    }, 2000);
   }
 
-  function handleApprove() {
-    // TODO: PATCH pid_parameters status → "active" via Supabase
-    setIsPending(false);
+  async function handleApprove() {
+    await approvePending();
   }
 
-  function handleReject() {
-    setIsPending(false);
+  async function handleReject() {
+    await rejectPending();
   }
 
   return (
@@ -100,14 +89,14 @@ export function PidControl() {
 
       {/* Body */}
       <div className="flex-1">
-        {!isPending ? (
+        {!hasPending ? (
           /* --- Current active params --- */
           <>
             <p className="text-[11px] font-semibold text-[#6E8143] uppercase tracking-wide mb-3">
               Parameter Aktif
             </p>
-            <PidParamRow label="Kain" values={ACTIVE_PID.kain} />
-            <PidParamRow label="Kulit" values={ACTIVE_PID.kulit} />
+            <PidParamRow label="Kain" values={activeParams.kain} />
+            <PidParamRow label="Kulit" values={activeParams.kulit} />
           </>
         ) : (
           /* --- Comparison: old vs pending_review --- */
@@ -115,8 +104,8 @@ export function PidControl() {
             <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-wide mb-3">
               Menunggu Persetujuan
             </p>
-            <CompareRow label="Kain" oldVal={ACTIVE_PID.kain} newVal={PENDING_PID.kain} />
-            <CompareRow label="Kulit" oldVal={ACTIVE_PID.kulit} newVal={PENDING_PID.kulit} />
+            {pendingParams.kain && <CompareRow label="Kain" oldVal={activeParams.kain} newVal={pendingParams.kain} />}
+            {pendingParams.kulit && <CompareRow label="Kulit" oldVal={activeParams.kulit} newVal={pendingParams.kulit} />}
             <p className="text-[10px] text-gray-400 mt-1">
               Dicoret = nilai lama · Tebal = nilai baru · Hijau = berubah
             </p>
@@ -125,7 +114,7 @@ export function PidControl() {
       </div>
 
       {/* Footer buttons */}
-      {!isPending ? (
+      {!hasPending ? (
         <button
           type="button"
           onClick={handleUpdatePID}

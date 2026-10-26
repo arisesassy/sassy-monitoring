@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { PidControl } from "./pid-control";
+import { useTelemetry } from "@/lib/hooks/use-telemetry";
 
 export function ControlsSection() {
+  const { telemetry } = useTelemetry();
   const [targetTemp, setTargetTemp] = useState(70.0);
   const [material, setMaterial] = useState("Kain");
   const [duration, setDuration] = useState("120 menit");
@@ -113,7 +115,9 @@ export function ControlsSection() {
         {/* Status Mesin Card */}
         <div className="custom-card p-6 shadow-sm flex flex-col justify-center h-[130px]">
           <h3 className="text-xs font-semibold text-gray-600 mb-1">Status Mesin</h3>
-          <p className="text-3xl font-extrabold text-[#5B6C36] tracking-tight">Pre-Heating</p>
+          <p className="text-3xl font-extrabold text-[#5B6C36] tracking-tight">
+            {telemetry.machine_status}
+          </p>
         </div>
 
         {/* Status Burner Card */}
@@ -121,14 +125,25 @@ export function ControlsSection() {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs font-bold text-gray-700">Status Burner</h3>
             <span className="bg-[#6B7D41] text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
-              Api terdeteksi
+              {telemetry.burner1_active || telemetry.burner2_active ? "Api terdeteksi" : "Mati"}
             </span>
           </div>
 
           {/* Burner 1 Row */}
-          <div className="pb-3 border-b border-gray-200">
-            <h4 className="text-sm font-bold text-gray-800">Burner 1</h4>
-            <p className="text-[11px] text-gray-500 font-normal">Sensor api</p>
+          <div className="pb-3 border-b border-gray-200 flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-bold text-gray-800">Burner 1</h4>
+              <p className="text-[11px] text-gray-500 font-normal">Sensor api</p>
+            </div>
+            <span
+              className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
+                telemetry.burner1_active
+                  ? "bg-[#6B7D41] text-white"
+                  : "bg-[#D9DBD0] text-gray-600"
+              }`}
+            >
+              {telemetry.burner1_active ? "Aktif" : "Mati"}
+            </span>
           </div>
 
           {/* Burner 2 Row */}
@@ -137,8 +152,14 @@ export function ControlsSection() {
               <h4 className="text-sm font-bold text-gray-800">Burner 2</h4>
               <p className="text-[11px] text-gray-500 font-normal">Sensor api</p>
             </div>
-            <span className="bg-[#D9DBD0] text-gray-600 text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
-              Mati
+            <span
+              className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
+                telemetry.burner2_active
+                  ? "bg-[#6B7D41] text-white"
+                  : "bg-[#D9DBD0] text-gray-600"
+              }`}
+            >
+              {telemetry.burner2_active ? "Aktif" : "Mati"}
             </span>
           </div>
         </div>

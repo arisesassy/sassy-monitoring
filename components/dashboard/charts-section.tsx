@@ -1,15 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useTelemetry } from "@/lib/hooks/use-telemetry";
 
 export function ChartsSection() {
-  const [progress] = useState(79); // Nilai persen proses (0 - 100)
+  const { telemetry, historyPoints } = useTelemetry();
+  const progress = telemetry.process_progress;
 
   // Hitung stroke-dasharray & stroke-dashoffset untuk busur setengah lingkaran
-  // Lingkaran penuh jari-jari r=75 -> keliling = 2 * PI * 75 ≈ 471.24
-  // Busur setengah lingkaran = PI * 75 ≈ 235.62
   const radius = 75;
-  const arcLength = Math.PI * radius; // 235.62
+  const arcLength = Math.PI * radius;
   const strokeDashoffset = arcLength * (1 - progress / 100);
 
   return (
@@ -32,6 +31,22 @@ export function ChartsSection() {
             <div className="flex items-center gap-3 w-full">
               <span className="w-10 text-right">30°C</span>
               <div className="flex-1 border-b border-gray-200"></div>
+            </div>
+
+            {/* Mini visualization: latest 5 points */}
+            <div className="mt-4 flex items-end justify-between h-12 gap-1 px-2">
+              {historyPoints.slice(-5).map((point, idx) => {
+                const tempNorm = (point.temp - 20) / 80; // Normalize 20-100°C range
+                const height = Math.max(20, Math.min(100, tempNorm * 100));
+                return (
+                  <div
+                    key={idx}
+                    className="flex-1 bg-[#65763D] rounded-t opacity-70 hover:opacity-100 transition"
+                    style={{ height: `${height}%` }}
+                    title={`${point.temp}°C`}
+                  />
+                );
+              })}
             </div>
           </div>
         </div>
@@ -76,7 +91,9 @@ export function ChartsSection() {
           </svg>
           {/* Gauge Percentage Text */}
           <div className="absolute bottom-1 flex items-baseline justify-center">
-            <span className="text-5xl font-extrabold text-[#536331] tracking-tight">{progress}</span>
+            <span className="text-5xl font-extrabold text-[#536331] tracking-tight">
+              {Math.round(progress)}
+            </span>
             <span className="text-2xl font-bold text-[#536331] ml-0.5">%</span>
           </div>
         </div>
