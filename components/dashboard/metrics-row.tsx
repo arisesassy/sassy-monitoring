@@ -80,7 +80,7 @@ export function MetricsRow() {
             {formatTime(remaining)}
           </span>
         </div>
-        <p className="text-xs text-gray-500 font-normal">{telemetry?.machine_status || "Siap"}</p>
+        <p className="text-xs text-gray-500 font-normal">{telemetry?.machine_status || "Mesin Siap"}</p>
       </div>
     </section>
   );

@@ -14,13 +14,12 @@ export interface TelemetryData {
   water_level: number;
   process_progress: number;
   remaining_time_seconds: number;
-  machine_status: string;
+  machine_status: "Mesin Mati" | "Mesin Siap" | "Sedang Proses" | "Selesai";
   burner1_active: boolean;
   burner2_active: boolean;
   pid_output_percent: number;
   material_type: string;
   duration_minutes: number;
-  flip_roll_interval_minutes: number;
 }
 
 const DEFAULT_TELEMETRY: TelemetryData = {
@@ -33,13 +32,12 @@ const DEFAULT_TELEMETRY: TelemetryData = {
   water_level: 50.0,
   process_progress: 0.0,
   remaining_time_seconds: 0,
-  machine_status: "Siap",
+  machine_status: "Mesin Siap",
   burner1_active: true,
   burner2_active: false,
   pid_output_percent: 36.0,
   material_type: "Kain",
   duration_minutes: 120,
-  flip_roll_interval_minutes: 30,
 };
 
 interface TelemetryContextType {

@@ -9,7 +9,6 @@ export function ControlsSection() {
   const [targetTemp, setTargetTemp] = useState(70.0);
   const [material, setMaterial] = useState("Kain");
   const [duration, setDuration] = useState("120 menit");
-  const [flipRoll, setFlipRoll] = useState("30 menit");
 
   const machineStatus = telemetry?.machine_status || "Siap";
   const burner1Active = Boolean(telemetry?.burner1_active);
@@ -45,7 +44,7 @@ export function ControlsSection() {
             <button
               type="button"
               aria-label="Kurangi Suhu"
-              onClick={() => setTargetTemp((prev) => Math.max(0, +(prev - 0.5).toFixed(1)))}
+              onClick={() => setTargetTemp((prev) => Math.max(50, +(prev - 0.5).toFixed(1)))}
               className="w-12 h-7 rounded-full border border-[#738450] text-[#5E7036] flex items-center justify-center font-bold hover:bg-[#6E8143] hover:text-white transition text-sm cursor-pointer select-none"
             >
               −
@@ -59,41 +58,25 @@ export function ControlsSection() {
             <button
               type="button"
               aria-label="Tambah Suhu"
-              onClick={() => setTargetTemp((prev) => +(prev + 0.5).toFixed(1))}
+              onClick={() => setTargetTemp((prev) => Math.min(100, +(prev + 0.5).toFixed(1)))}
               className="w-12 h-7 rounded-full border border-[#738450] text-[#5E7036] flex items-center justify-center font-bold hover:bg-[#6E8143] hover:text-white transition text-sm cursor-pointer select-none"
             >
               +
             </button>
           </div>
 
-          {/* Fields: Durasi & Balik Gulungan */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Durasi</label>
-              <select
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                className="custom-select custom-pill-input w-full h-9 px-3 text-xs font-medium text-gray-700 cursor-pointer"
-              >
-                <option>120 menit</option>
-                <option>90 menit</option>
-                <option>60 menit</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                Balik Gulungan
-              </label>
-              <select
-                value={flipRoll}
-                onChange={(e) => setFlipRoll(e.target.value)}
-                className="custom-select custom-pill-input w-full h-9 px-3 text-xs font-medium text-gray-700 cursor-pointer"
-              >
-                <option>30 menit</option>
-                <option>20 menit</option>
-                <option>15 menit</option>
-              </select>
-            </div>
+          {/* Field: Durasi */}
+          <div className="mb-4">
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Durasi</label>
+            <select
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              className="custom-select custom-pill-input w-full h-9 px-3 text-xs font-medium text-gray-700 cursor-pointer"
+            >
+              <option>60 menit</option>
+              <option>90 menit</option>
+              <option>120 menit</option>
+            </select>
           </div>
         </div>
 
@@ -119,7 +102,7 @@ export function ControlsSection() {
         {/* Status Mesin Card */}
         <div className="custom-card p-6 shadow-sm flex flex-col justify-center h-[130px]">
           <h3 className="text-xs font-semibold text-gray-600 mb-1">Status Mesin</h3>
-          <p className="text-3xl font-extrabold text-[#5B6C36] tracking-tight">
+          <p className="text-2xl lg:text-3xl font-extrabold text-[#5B6C36] tracking-tight">
             {machineStatus}
           </p>
         </div>

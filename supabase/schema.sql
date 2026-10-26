@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS telemetry (
   process_progress NUMERIC(5,2) NOT NULL DEFAULT 0, -- Percentage (0-100)
   remaining_time_seconds INTEGER NOT NULL DEFAULT 0,
   
-  -- Machine state
-  machine_status VARCHAR(50) NOT NULL, -- 'Idle', 'Pre-Heating', 'Running', 'Paused', 'Completed', 'Emergency-Stop'
+  -- Machine state: 'Mesin Mati', 'Mesin Siap', 'Sedang Proses', 'Selesai'
+  machine_status VARCHAR(50) NOT NULL,
   burner1_active BOOLEAN NOT NULL DEFAULT false,
   burner2_active BOOLEAN NOT NULL DEFAULT false,
   
@@ -43,7 +43,6 @@ CREATE TABLE IF NOT EXISTS telemetry (
   -- Session configuration
   material_type VARCHAR(20) NOT NULL, -- 'Kain' or 'Kulit'
   duration_minutes INTEGER NOT NULL,
-  flip_roll_interval_minutes INTEGER NOT NULL,
   
   -- Indexes for query performance
   CONSTRAINT session_id_idx UNIQUE (session_id, timestamp)

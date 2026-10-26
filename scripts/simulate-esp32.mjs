@@ -68,13 +68,12 @@ async function sendTelemetry() {
     water_level: Number((82.0 - (progress * 0.15)).toFixed(1)),
     process_progress: Number(progress.toFixed(1)),
     remaining_time_seconds: remainingSeconds,
-    machine_status: currentTemp < targetTemp - 2 ? "Pre-Heating" : "Running",
+    machine_status: currentTemp < targetTemp - 2 ? "Sedang Proses" : "Selesai",
     burner1_active: true,
     burner2_active: currentTemp < targetTemp - 5,
     pid_output_percent: Number((Math.max(10, Math.min(100, (targetTemp - currentTemp) * 12 + 25))).toFixed(1)),
     material_type: "Kain",
     duration_minutes: 60,
-    flip_roll_interval_minutes: 15,
   };
 
   try {
