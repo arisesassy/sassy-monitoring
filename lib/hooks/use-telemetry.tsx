@@ -42,7 +42,7 @@ const DEFAULT_TELEMETRY: TelemetryData = {
 
 interface TelemetryContextType {
   telemetry: TelemetryData;
-  historyPoints: { time: string; temp: number; target: number }[];
+  historyPoints: { timestamp: Date; temp: number; target: number }[];
   isConnected: boolean;
 }
 
@@ -54,7 +54,7 @@ const TelemetryContext = createContext<TelemetryContextType>({
 
 export function TelemetryProvider({ children }: { children: ReactNode }) {
   const [telemetry, setTelemetry] = useState<TelemetryData>(DEFAULT_TELEMETRY);
-  const [historyPoints, setHistoryPoints] = useState<{ time: string; temp: number; target: number }[]>([]);
+  const [historyPoints, setHistoryPoints] = useState<{ timestamp: Date; temp: number; target: number }[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
@@ -78,7 +78,7 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
         setHistoryPoints((prev) => [
           ...prev,
           {
-            time: new Date(data.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+            timestamp: new Date(data.timestamp),
             temp: Number(data.temp_actual),
             target: Number(data.temp_target),
           },
@@ -106,15 +106,21 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
           const newData = payload.new as TelemetryData;
           setTelemetry(newData);
           setHistoryPoints((prev) => {
+            const now = Date.now();
+            const twentyMinutesAgo = now - 20 * 60 * 1000;
+            
+            // Tambah point baru
             const next = [
               ...prev,
               {
-                time: new Date(newData.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+                timestamp: new Date(newData.timestamp),
                 temp: Number(newData.temp_actual),
                 target: Number(newData.temp_target),
               },
             ];
-            return next.slice(-30);
+            
+            // Filter hanya 20 menit terakhir
+            return next.filter((p) => p.timestamp.getTime() >= twentyMinutesAgo);
           });
         }
       )

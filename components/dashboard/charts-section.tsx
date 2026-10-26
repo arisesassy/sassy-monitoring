@@ -1,6 +1,7 @@
 "use client";
 
 import { useTelemetry } from "@/lib/hooks/use-telemetry";
+import { TemperatureChart } from "./temperature-chart";
 
 function safeNum(val: unknown, fallback: number): number {
   const n = Number(val);
@@ -21,49 +22,23 @@ export function ChartsSection() {
       {/* Temperature vs Time Chart Card */}
       <div className="custom-card lg:col-span-7 p-7 shadow-sm flex flex-col justify-between min-h-[340px]">
         <div>
-          <h2 className="text-base font-semibold text-gray-700 mb-6">Grafik suhu terhadap waktu</h2>
-          {/* Mock Chart Graphic Component */}
-          <div className="relative w-full h-[180px] flex flex-col justify-between py-2 text-xs text-gray-500 font-medium">
-            {/* Grid Lines & Y-Axis Labels */}
-            <div className="flex items-center gap-3 w-full">
-              <span className="w-10 text-right">90°C</span>
-              <div className="flex-1 border-b border-gray-200"></div>
-            </div>
-            <div className="flex items-center gap-3 w-full">
-              <span className="w-10 text-right">60°C</span>
-              <div className="flex-1 border-b border-gray-200"></div>
-            </div>
-            <div className="flex items-center gap-3 w-full">
-              <span className="w-10 text-right">30°C</span>
-              <div className="flex-1 border-b border-gray-200"></div>
-            </div>
-
-            {/* Mini visualization: latest 5 points */}
-            <div className="mt-4 flex items-end justify-between h-12 gap-1 px-2">
-              {historyPoints.slice(-5).map((point, idx) => {
-                const tempNorm = (point.temp - 20) / 80; // Normalize 20-100°C range
-                const height = Math.max(20, Math.min(100, tempNorm * 100));
-                return (
-                  <div
-                    key={idx}
-                    className="flex-1 bg-[#65763D] rounded-t opacity-70 hover:opacity-100 transition"
-                    style={{ height: `${height}%` }}
-                    title={`${point.temp}°C`}
-                  />
-                );
-              })}
-            </div>
-          </div>
+          <h2 className="text-base font-semibold text-gray-700 mb-4">Grafik suhu terhadap waktu (20 menit terakhir)</h2>
+          {/* Timeseries Chart */}
+          <TemperatureChart data={historyPoints} />
         </div>
         {/* Legend Items */}
         <div className="flex items-center gap-6 mt-4 text-xs font-semibold text-gray-600">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#65763D]"></span>
+            <div className="w-3 h-0.5 bg-[#65763D]"></div>
             <span>Suhu Aktual</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#E1E8D2]"></span>
+            <div className="w-3 h-0.5 bg-[#C4D4A8] border-b-2 border-dashed"></div>
             <span>Suhu Target</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-3 bg-[#E0E7CF] opacity-30 rounded"></div>
+            <span>Target Zone (±2°C)</span>
           </div>
         </div>
       </div>
