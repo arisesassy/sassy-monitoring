@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 
 export interface TelemetryData {
@@ -42,12 +42,26 @@ const DEFAULT_TELEMETRY: TelemetryData = {
   flip_roll_interval_minutes: 30,
 };
 
-export function useTelemetry() {
+interface TelemetryContextType {
+  telemetry: TelemetryData;
+  historyPoints: { time: string; temp: number; target: number }[];
+  isConnected: boolean;
+}
+
+const TelemetryContext = createContext<TelemetryContextType>({
+  telemetry: DEFAULT_TELEMETRY,
+  historyPoints: [],
+  isConnected: false,
+});
+
+export function TelemetryProvider({ children }: { children: ReactNode }) {
   const [telemetry, setTelemetry] = useState<TelemetryData>(DEFAULT_TELEMETRY);
   const [historyPoints, setHistoryPoints] = useState<{ time: string; temp: number; target: number }[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+
     // 1. Initial fetch: ambil record telemetri paling baru
     async function fetchLatest() {
       const { data, error } = await supabase
@@ -57,7 +71,7 @@ export function useTelemetry() {
         .limit(1)
         .maybeSingle();
 
-      if (!error && data) {
+      if (!error && data && isMounted) {
         setTelemetry(data as TelemetryData);
         setHistoryPoints((prev) => [
           ...prev,
@@ -72,10 +86,11 @@ export function useTelemetry() {
 
     fetchLatest();
 
-    // 2. Realtime subscription: dengarkan INSERT baru pada tabel telemetry
-    // ponytail: single channel global, upgrade to session-filtered channel when multi-device active
+    // 2. Realtime subscription: single channel dengan unique ID per session
+    // ponytail: single channel context, upgrade to room channel when multiple steamer units exist
+    const channelName = `realtime-telemetry-${Date.now()}`;
     const channel = supabase
-      .channel("realtime-telemetry")
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
@@ -84,6 +99,7 @@ export function useTelemetry() {
           table: "telemetry",
         },
         (payload) => {
+          if (!isMounted) return;
           const newData = payload.new as TelemetryData;
           setTelemetry(newData);
           setHistoryPoints((prev) => {
@@ -95,19 +111,27 @@ export function useTelemetry() {
                 target: Number(newData.temp_target),
               },
             ];
-            // Simpan maksimal 30 poin data terbaru untuk grafik
             return next.slice(-30);
           });
         }
       )
       .subscribe((status) => {
-        setIsConnected(status === "SUBSCRIBED");
+        if (isMounted) setIsConnected(status === "SUBSCRIBED");
       });
 
     return () => {
+      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, []);
 
-  return { telemetry, historyPoints, isConnected };
+  return (
+    <TelemetryContext.Provider value={{ telemetry, historyPoints, isConnected }}>
+      {children}
+    </TelemetryContext.Provider>
+  );
+}
+
+export function useTelemetry() {
+  return useContext(TelemetryContext);
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 
 export interface PidParameter {
@@ -21,7 +21,32 @@ export interface PidParams {
   kd: number;
 }
 
-export function usePidParameters() {
+interface PidParametersContextType {
+  activeParams: {
+    kain: PidParams;
+    kulit: PidParams;
+  };
+  pendingParams: {
+    kain: PidParams | null;
+    kulit: PidParams | null;
+  };
+  hasPending: boolean;
+  approvePending: () => Promise<void>;
+  rejectPending: () => Promise<void>;
+}
+
+const PidParametersContext = createContext<PidParametersContextType>({
+  activeParams: {
+    kain: { kp: 8.0, ki: 0.08, kd: 10.0 },
+    kulit: { kp: 6.5, ki: 0.05, kd: 8.0 },
+  },
+  pendingParams: { kain: null, kulit: null },
+  hasPending: false,
+  approvePending: async () => {},
+  rejectPending: async () => {},
+});
+
+export function PidParametersProvider({ children }: { children: ReactNode }) {
   const [activeParams, setActiveParams] = useState<{
     kain: PidParams;
     kulit: PidParams;
@@ -41,14 +66,15 @@ export function usePidParameters() {
   const [hasPending, setHasPending] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function fetchParams() {
-      // Fetch active params
       const { data: activeData } = await supabase
         .from("pid_parameters")
         .select("*")
         .eq("status", "active");
 
-      if (activeData) {
+      if (activeData && isMounted) {
         const kainActive = activeData.find((p) => p.material_type === "Kain");
         const kulitActive = activeData.find((p) => p.material_type === "Kulit");
 
@@ -62,57 +88,57 @@ export function usePidParameters() {
         });
       }
 
-      // Fetch pending_review params
       const { data: pendingData } = await supabase
         .from("pid_parameters")
         .select("*")
         .eq("status", "pending_review");
 
-      if (pendingData && pendingData.length > 0) {
-        const kainPending = pendingData.find((p) => p.material_type === "Kain");
-        const kulitPending = pendingData.find((p) => p.material_type === "Kulit");
+      if (isMounted) {
+        if (pendingData && pendingData.length > 0) {
+          const kainPending = pendingData.find((p) => p.material_type === "Kain");
+          const kulitPending = pendingData.find((p) => p.material_type === "Kulit");
 
-        setPendingParams({
-          kain: kainPending
-            ? { kp: Number(kainPending.kp), ki: Number(kainPending.ki), kd: Number(kainPending.kd) }
-            : null,
-          kulit: kulitPending
-            ? { kp: Number(kulitPending.kp), ki: Number(kulitPending.ki), kd: Number(kulitPending.kd) }
-            : null,
-        });
-        setHasPending(true);
-      } else {
-        setPendingParams({ kain: null, kulit: null });
-        setHasPending(false);
+          setPendingParams({
+            kain: kainPending
+              ? { kp: Number(kainPending.kp), ki: Number(kainPending.ki), kd: Number(kainPending.kd) }
+              : null,
+            kulit: kulitPending
+              ? { kp: Number(kulitPending.kp), ki: Number(kulitPending.ki), kd: Number(kulitPending.kd) }
+              : null,
+          });
+          setHasPending(true);
+        } else {
+          setPendingParams({ kain: null, kulit: null });
+          setHasPending(false);
+        }
       }
     }
 
     fetchParams();
 
-    // Realtime subscription untuk pid_parameters
+    const channelName = `realtime-pid-${Date.now()}`;
     const channel = supabase
-      .channel("realtime-pid")
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
-          event: "*", // INSERT, UPDATE, DELETE
+          event: "*",
           schema: "public",
           table: "pid_parameters",
         },
         () => {
-          // Refetch saat ada perubahan
-          fetchParams();
+          if (isMounted) fetchParams();
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, []);
 
   async function approvePending() {
-    // Ambil semua pending params
     const { data: pendingData } = await supabase
       .from("pid_parameters")
       .select("*")
@@ -120,16 +146,13 @@ export function usePidParameters() {
 
     if (!pendingData || pendingData.length === 0) return;
 
-    // Archive old active params, set pending to active
     for (const pending of pendingData) {
-      // Archive old active param untuk material yang sama
       await supabase
         .from("pid_parameters")
         .update({ status: "archived" })
         .eq("material_type", pending.material_type)
         .eq("status", "active");
 
-      // Set pending jadi active
       await supabase
         .from("pid_parameters")
         .update({ status: "active" })
@@ -138,18 +161,27 @@ export function usePidParameters() {
   }
 
   async function rejectPending() {
-    // Hapus atau archive pending params
     await supabase
       .from("pid_parameters")
       .update({ status: "archived" })
       .eq("status", "pending_review");
   }
 
-  return {
-    activeParams,
-    pendingParams,
-    hasPending,
-    approvePending,
-    rejectPending,
-  };
+  return (
+    <PidParametersContext.Provider
+      value={{
+        activeParams,
+        pendingParams,
+        hasPending,
+        approvePending,
+        rejectPending,
+      }}
+    >
+      {children}
+    </PidParametersContext.Provider>
+  );
+}
+
+export function usePidParameters() {
+  return useContext(PidParametersContext);
 }
