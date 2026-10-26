@@ -13,7 +13,7 @@ export default function DashboardPage() {
   return (
     <TelemetryProvider>
       <PidParametersProvider>
-        <main className="min-h-screen p-6 md:p-8 flex justify-center" style={{ backgroundColor: "#F6F7F2" }}>
+        <main className="min-h-screen p-6 md:p-8 pb-16 flex justify-center" style={{ backgroundColor: "#F6F7F2" }}>
           <div className="w-full max-w-[1280px] flex flex-col gap-6">
             <Navbar />
             <MetricsRow />
