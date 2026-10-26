@@ -71,6 +71,10 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
         .limit(1)
         .maybeSingle();
 
+      if (error) {
+        console.error("[useTelemetry] fetchLatest error:", error.message, error);
+      }
+
       if (!error && data && isMounted) {
         setTelemetry(data as TelemetryData);
         setHistoryPoints((prev) => [
@@ -100,6 +104,7 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
         },
         (payload) => {
           if (!isMounted) return;
+          console.log("[useTelemetry] Realtime INSERT received:", payload.new);
           const newData = payload.new as TelemetryData;
           setTelemetry(newData);
           setHistoryPoints((prev) => {
@@ -115,7 +120,8 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
           });
         }
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
+        console.log(`[useTelemetry] Realtime status: ${status}`, err || "");
         if (isMounted) setIsConnected(status === "SUBSCRIBED");
       });
 
