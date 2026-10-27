@@ -63,6 +63,7 @@ function CompareRow({
 
 export function PidControl() {
   const [isTraining, setIsTraining] = useState(false);
+  const [trainError, setTrainError] = useState<string | null>(null);
   const { telemetry, isDeviceOnline, isStandby, displayMachineStatus } =
     useTelemetry();
   const { activeParams, pendingParams, hasPending, approvePending, rejectPending } = usePidParameters();
@@ -77,12 +78,30 @@ export function PidControl() {
 
   async function handleUpdatePID() {
     setIsTraining(true);
-    // TODO: Panggil FastAPI endpoint untuk training PID
-    // const response = await fetch(process.env.NEXT_PUBLIC_FASTAPI_URL + '/train-pid', { method: 'POST' });
-    // Simulasi delay 2 detik
-    setTimeout(() => {
+    setTrainError(null);
+
+    try {
+      const response = await fetch("/api/train-pid", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          result?.error || `Gagal melatih model (HTTP ${response.status})`
+        );
+      }
+    } catch (err: unknown) {
+      setTrainError(
+        err instanceof Error
+          ? err.message
+          : "Terjadi kesalahan saat melatih PID."
+      );
+    } finally {
       setIsTraining(false);
-    }, 2000);
+    }
   }
 
   async function handleApprove() {
@@ -138,21 +157,28 @@ export function PidControl() {
 
       {/* Footer buttons */}
       {!hasPending ? (
-        <button
-          type="button"
-          onClick={handleUpdatePID}
-          disabled={isTraining}
-          className="mt-3 w-full bg-[#6E8143] hover:bg-[#5E7036] disabled:opacity-60 text-white font-medium text-xs py-2.5 rounded-full transition shadow-sm cursor-pointer flex items-center justify-center gap-2"
-        >
-          {isTraining ? (
-            <>
-              <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              Melatih model…
-            </>
-          ) : (
-            "✦ Update PID"
+        <div>
+          <button
+            type="button"
+            onClick={handleUpdatePID}
+            disabled={isTraining}
+            className="mt-3 w-full bg-[#6E8143] hover:bg-[#5E7036] disabled:opacity-60 text-white font-medium text-xs py-2.5 rounded-full transition shadow-sm cursor-pointer flex items-center justify-center gap-2"
+          >
+            {isTraining ? (
+              <>
+                <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                Melatih model…
+              </>
+            ) : (
+              "✦ Update PID"
+            )}
+          </button>
+          {trainError && (
+            <p className="mt-2 text-[11px] font-medium text-[#D96B60] leading-snug">
+              {trainError}
+            </p>
           )}
-        </button>
+        </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 mt-3">
           <button
