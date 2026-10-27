@@ -12,17 +12,21 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
       wheelMultiplier: 1,
     });
 
+    let stopped = false;
+    let frameId = 0;
+
     function raf(time: number) {
+      if (stopped) return;
       lenis.raf(time);
-      requestAnimationFrame(raf);
+      frameId = requestAnimationFrame(raf);
     }
 
-    const rafId = requestAnimationFrame(raf);
+    frameId = requestAnimationFrame(raf);
 
     // Prevent default scroll behavior agar Lenis handle sepenuhnya
     const handleWheel = (e: WheelEvent) => {
       // Jika Lenis aktif, biarkan Lenis handle
-      lenis.isScrolling && e.preventDefault();
+      if (lenis.isScrolling) e.preventDefault();
     };
 
     const handleTouchMove = (e: TouchEvent) => {
@@ -36,7 +40,8 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
     window.addEventListener("touchmove", handleTouchMove, { passive: false });
 
     return () => {
-      cancelAnimationFrame(rafId);
+      stopped = true;
+      cancelAnimationFrame(frameId);
       window.removeEventListener("wheel", handleWheel);
       window.removeEventListener("touchmove", handleTouchMove);
       lenis.destroy();

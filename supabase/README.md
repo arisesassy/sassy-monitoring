@@ -16,17 +16,28 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 NEXT_PUBLIC_FASTAPI_URL=https://your-fastapi-app.onrender.com
 ```
 
-## 3. Jalankan SQL Schema
+## 3. Jalankan SQL Schema & Migrasi
 
 1. Buka **SQL Editor** di dashboard Supabase: `https://app.supabase.com/project/_/sql`
-2. Copy-paste seluruh isi file `supabase/schema.sql`
-3. Klik **Run** untuk eksekusi.
+2. Copy-paste seluruh isi file `supabase/schema.sql`, lalu **Run**.
+3. Copy-paste seluruh isi file `supabase/migrations/20261027000000_session_control.sql`, lalu **Run**.
 
-Script ini akan:
+Migrasi ini akan:
+- Menambahkan status `Jeda` pada constraint `telemetry.machine_status`
+- Membuat tabel `session_control` (kontrol live dashboard → ESP32)
+- Mengaktifkan Realtime untuk `session_control`
+- Memperketat akses tulis `sessions` dan `pid_parameters` hanya untuk user `authenticated`
+
+Script schema awal akan:
 - Membuat tabel `telemetry`, `pid_parameters`, `sessions`
-- Enable Row Level Security (RLS) dengan policy public read + authenticated write
+- Enable Row Level Security (RLS)
 - Enable Realtime untuk `telemetry` dan `pid_parameters`
 - Seed data awal: PID aktif untuk Kain (Kp=8.0, Ki=0.08, Kd=10.0) dan Kulit (Kp=6.5, Ki=0.05, Kd=8.0)
+
+> Catatan: `session_control` dan penulisan `sessions` hanya dapat diakses role
+> `authenticated`. Jika ESP32 memakai anon key, tambahkan policy/akses khusus
+> perangkat (mis. lewat service role di backend) agar ESP32 bisa polling perintah
+> dan menulis log sesi.
 
 ## 4. Verifikasi Realtime
 
@@ -47,13 +58,12 @@ Di **Database → Replication**, pastikan publikasi `supabase_realtime` include 
 | `water_level` | NUMERIC(5,2) | Level air (%) |
 | `process_progress` | NUMERIC(5,2) | Progres proses (%) |
 | `remaining_time_seconds` | INTEGER | Sisa waktu (detik) |
-| `machine_status` | VARCHAR(50) | Status mesin |
+| `machine_status` | VARCHAR(50) | `Mesin Mati`, `Mesin Siap`, `Sedang Proses`, `Jeda`, `Selesai` |
 | `burner1_active` | BOOLEAN | Burner 1 nyala |
 | `burner2_active` | BOOLEAN | Burner 2 nyala |
 | `pid_output_percent` | NUMERIC(5,2) | Output PID (%) |
 | `material_type` | VARCHAR(20) | 'Kain' atau 'Kulit' |
 | `duration_minutes` | INTEGER | Durasi sesi (menit) |
-| `flip_roll_interval_minutes` | INTEGER | Interval balik gulungan |
 
 **Realtime**: Enabled via `postgres_changes` subscription
 
@@ -84,6 +94,23 @@ Di **Database → Replication**, pastikan publikasi `supabase_realtime` include 
 | `status` | VARCHAR(20) | 'Selesai' atau 'Dihentikan' |
 | `started_at` | TIMESTAMPTZ | Waktu mulai |
 | `ended_at` | TIMESTAMPTZ | Waktu selesai |
+
+**Write**: Hanya ESP32/backend yang menulis log sesi; dashboard hanya SELECT.
+
+### `session_control`
+| Kolom | Tipe | Deskripsi |
+|-------|------|-----------|
+| `id` | INT | Selalu `1` (satu baris kontrol) |
+| `status` | VARCHAR(20) | `idle`, `running`, `paused`, `stopped` |
+| `target_temp` | NUMERIC(5,2) | Target suhu dari dashboard |
+| `duration_minutes` | INTEGER | Durasi sesi |
+| `material_type` | VARCHAR(20) | 'Kain' atau 'Kulit' |
+| `version` | BIGINT | Unix timestamp detik saat update |
+| `updated_by` | VARCHAR(20) | `web` untuk dashboard |
+| `updated_at` | TIMESTAMPTZ | Waktu update terakhir |
+
+**Realtime**: Enabled via `postgres_changes` subscription  
+**Akses**: Hanya role `authenticated` (dashboard)
 
 ## 6. Alur Data
 
@@ -174,13 +201,12 @@ curl -X POST "https://your-project.supabase.co/rest/v1/telemetry" \
     "water_level": 85.0,
     "process_progress": 25.0,
     "remaining_time_seconds": 3600,
-    "machine_status": "Running",
+    "machine_status": "Sedang Proses",
     "burner1_active": true,
     "burner2_active": false,
     "pid_output_percent": 42.5,
     "material_type": "Kain",
-    "duration_minutes": 120,
-    "flip_roll_interval_minutes": 30
+    "duration_minutes": 120
   }'
 ```
 

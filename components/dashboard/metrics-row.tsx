@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { useTelemetry } from "@/lib/hooks/use-telemetry";
 
 function safeNum(val: unknown, fallback: number): number {
@@ -7,41 +8,59 @@ function safeNum(val: unknown, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function formatTime(seconds: number) {
+  const sSafe = Math.max(0, Math.floor(seconds));
+  const h = Math.floor(sSafe / 3600);
+  const m = Math.floor((sSafe % 3600) / 60);
+  const s = sSafe % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 export function MetricsRow() {
-  const { telemetry, isConnected } = useTelemetry();
+  const { telemetry, remainingSeconds, isOffline, hasReceivedData } =
+    useTelemetry();
 
-  // Format remaining time (HH:MM:SS)
-  const formatTime = (seconds: number) => {
-    const sSafe = Math.max(0, Math.floor(seconds));
-    const h = Math.floor(sSafe / 3600);
-    const m = Math.floor((sSafe % 3600) / 60);
-    const s = sSafe % 60;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  };
-
-  // Selalu fallback ke default jika null / undefined / NaN
   const tempActual = safeNum(telemetry?.temp_actual, 30.0);
-  const tempPt1    = safeNum(telemetry?.temp_pt100_1, 30.8);
-  const tempPt2    = safeNum(telemetry?.temp_pt100_2, 29.7);
+  const tempPt1 = safeNum(telemetry?.temp_pt100_1, 30.8);
+  const tempPt2 = safeNum(telemetry?.temp_pt100_2, 29.7);
   const tempTarget = safeNum(telemetry?.temp_target, 70.0);
   const waterLevel = safeNum(telemetry?.water_level, 50.0);
-  const remaining  = safeNum(telemetry?.remaining_time_seconds, 0);
+  const waterLow = waterLevel <= 25;
+
+  const isMuted = hasReceivedData && isOffline;
 
   return (
     <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-      {/* Metric 1: Suhu Aktual (Olive Green Card) */}
-      <div className="bg-[#617438] text-white p-6 rounded-3xl shadow-sm flex flex-col justify-between h-[164px] relative">
-        {isConnected && (
-          <div className="absolute top-3 right-3 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+      {/* Metric 1: Suhu Aktual */}
+      <div
+        className={cn(
+          "p-6 rounded-3xl shadow-sm flex flex-col justify-between h-[164px] relative transition-colors",
+          isMuted ? "bg-[#B9BDB1] text-white/75" : "bg-[#617438] text-white"
         )}
-        <h3 className="text-white/90 text-sm font-medium">Suhu Aktual</h3>
+      >
+        {hasReceivedData && (
+          <div
+            className={cn(
+              "absolute top-3 right-3 w-2 h-2 rounded-full",
+              isOffline ? "bg-[#E8A79F]" : "bg-green-400 animate-pulse"
+            )}
+          />
+        )}
+        <h3 className={cn("text-sm font-medium", isMuted ? "text-white/70" : "text-white/90")}>
+          Suhu Aktual
+        </h3>
         <div className="flex items-baseline">
           <span className="text-5xl font-bold tracking-tight">
             {tempActual.toFixed(1)}
           </span>
           <span className="text-2xl font-light ml-1">°C</span>
         </div>
-        <p className="text-xs text-white/80 font-normal tracking-wide">
+        <p
+          className={cn(
+            "text-xs font-normal tracking-wide",
+            isMuted ? "text-white/60" : "text-white/80"
+          )}
+        >
           PT100-1 {tempPt1.toFixed(1)}°C · PT100-2 {tempPt2.toFixed(1)}°C
         </p>
       </div>
@@ -61,26 +80,70 @@ export function MetricsRow() {
       </div>
 
       {/* Metric 3: Level Air */}
-      <div className="custom-card p-6 shadow-sm flex flex-col justify-between h-[164px]">
-        <h3 className="text-gray-600 text-sm font-medium">Level Air</h3>
-        <div className="flex items-baseline text-neutral-800">
+      <div
+        className={cn(
+          "custom-card p-6 shadow-sm flex flex-col justify-between h-[164px] transition-colors",
+          isMuted && "bg-[#EFEFEA]"
+        )}
+      >
+        <h3 className={cn("text-sm font-medium", isMuted ? "text-gray-400" : "text-gray-600")}>
+          Level Air
+        </h3>
+        <div
+          className={cn(
+            "flex items-baseline",
+            isMuted ? "text-gray-400" : "text-neutral-800"
+          )}
+        >
           <span className="text-5xl font-bold tracking-tight">
             {Math.round(waterLevel)}
           </span>
           <span className="text-2xl font-normal ml-0.5 text-gray-500">%</span>
         </div>
-        <p className="text-xs text-gray-500 font-normal">Normal</p>
+        <div>
+          <div className="h-1.5 w-full rounded-full bg-[#E8EAE2] overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full transition-[width] duration-500 ease-out",
+                isMuted ? "bg-[#A9AD9F]" : waterLow ? "bg-[#D96B60]" : "bg-[#6E8143]"
+              )}
+              style={{ width: `${Math.min(100, Math.max(0, waterLevel))}%` }}
+            />
+          </div>
+          <p
+            className={cn(
+              "text-xs font-normal mt-1.5",
+              isMuted ? "text-gray-400" : waterLow ? "text-[#D96B60]" : "text-gray-500"
+            )}
+          >
+            {waterLow ? "Level air rendah" : "Normal"}
+          </p>
+        </div>
       </div>
 
       {/* Metric 4: Sisa Waktu */}
-      <div className="custom-card p-6 shadow-sm flex flex-col justify-between h-[164px]">
-        <h3 className="text-gray-600 text-sm font-medium">Sisa Waktu</h3>
-        <div className="flex items-baseline text-[#546430]">
+      <div
+        className={cn(
+          "custom-card p-6 shadow-sm flex flex-col justify-between h-[164px] transition-colors",
+          isMuted && "bg-[#EFEFEA]"
+        )}
+      >
+        <h3 className={cn("text-sm font-medium", isMuted ? "text-gray-400" : "text-gray-600")}>
+          Sisa Waktu
+        </h3>
+        <div
+          className={cn(
+            "flex items-baseline",
+            isMuted ? "text-gray-400" : "text-[#546430]"
+          )}
+        >
           <span className="text-4xl lg:text-[2.6rem] font-bold tracking-tight font-mono">
-            {formatTime(remaining)}
+            {formatTime(remainingSeconds)}
           </span>
         </div>
-        <p className="text-xs text-gray-500 font-normal">{telemetry?.machine_status || "Mesin Siap"}</p>
+        <p className="text-xs text-gray-500 font-normal">
+          {isMuted ? "Data terakhir" : telemetry?.machine_status || "Mesin Siap"}
+        </p>
       </div>
     </section>
   );

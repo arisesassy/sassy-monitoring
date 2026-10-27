@@ -5,6 +5,8 @@ import { Navbar } from "@/components/dashboard/navbar";
 import { SessionTable } from "@/components/history/session-table";
 import { SessionDetail } from "@/components/history/session-detail";
 import { SessionsProvider, useSessions } from "@/lib/hooks/use-sessions";
+import { TelemetryProvider } from "@/lib/hooks/use-telemetry";
+import { NotificationsProvider } from "@/lib/hooks/use-notifications";
 
 function HistoryPageContent() {
   const { sessions, isLoading } = useSessions();
@@ -46,8 +48,12 @@ function HistoryPageContent() {
 
 export default function HistoryPage() {
   return (
-    <SessionsProvider>
-      <HistoryPageContent />
-    </SessionsProvider>
+    <TelemetryProvider>
+      <NotificationsProvider>
+        <SessionsProvider>
+          <HistoryPageContent />
+        </SessionsProvider>
+      </NotificationsProvider>
+    </TelemetryProvider>
   );
 }

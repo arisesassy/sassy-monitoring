@@ -1,18 +1,91 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { PidControl } from "./pid-control";
 import { useTelemetry } from "@/lib/hooks/use-telemetry";
+import { useSessionControl } from "@/lib/hooks/use-session-control";
+import { useNotifications } from "@/lib/hooks/use-notifications";
 
 export function ControlsSection() {
-  const { telemetry } = useTelemetry();
-  const [targetTemp, setTargetTemp] = useState(70.0);
-  const [material, setMaterial] = useState("Kain");
-  const [duration, setDuration] = useState("120 menit");
+  const { telemetry, isOffline } = useTelemetry();
+  const { control, updateControl, isSaving } = useSessionControl();
+  const { clearLowWater } = useNotifications();
 
-  const machineStatus = telemetry?.machine_status || "Siap";
+  // Nilai awal diambil dari session_control. Komponen di-remount oleh
+  // ControlsMount saat versi kontrol berubah, jadi tidak perlu effect sync.
+  const [targetTemp, setTargetTemp] = useState(() =>
+    control?.target_temp !== null && control?.target_temp !== undefined
+      ? Number(control.target_temp)
+      : 70.0
+  );
+  const [material, setMaterial] = useState(control?.material_type ?? "Kain");
+  const [duration, setDuration] = useState(() =>
+    control?.duration_minutes !== null && control?.duration_minutes !== undefined
+      ? Number(control.duration_minutes)
+      : 120
+  );
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const machineStatus = telemetry?.machine_status || "Mesin Siap";
   const burner1Active = Boolean(telemetry?.burner1_active);
   const burner2Active = Boolean(telemetry?.burner2_active);
+
+  const isRunning = machineStatus === "Sedang Proses";
+  const isPaused = machineStatus === "Jeda";
+  const canStart = !isRunning && !isPaused;
+  const canPauseResume = isRunning || isPaused;
+
+  async function handleStart() {
+    setActionError(null);
+    try {
+      await updateControl({
+        status: "running",
+        target_temp: targetTemp,
+        duration_minutes: duration,
+        material_type: material,
+      });
+      clearLowWater();
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Gagal mengirim perintah Mulai."
+      );
+    }
+  }
+
+  async function handlePauseResume() {
+    setActionError(null);
+    try {
+      await updateControl({
+        status: isRunning ? "paused" : "running",
+        target_temp: targetTemp,
+        duration_minutes: duration,
+        material_type: material,
+      });
+      // Operator sudah mengakui peringatan air rendah saat melanjutkan.
+      if (isPaused) clearLowWater();
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Gagal mengubah status proses."
+      );
+    }
+  }
+
+  async function handleStop() {
+    setActionError(null);
+    try {
+      await updateControl({
+        status: "stopped",
+        target_temp: targetTemp,
+        duration_minutes: duration,
+        material_type: material,
+      });
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Gagal menghentikan proses."
+      );
+    }
+  }
 
   return (
     <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -70,29 +143,76 @@ export function ControlsSection() {
             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Durasi</label>
             <select
               value={duration}
-              onChange={(e) => setDuration(e.target.value)}
+              onChange={(e) => setDuration(Number(e.target.value))}
               className="custom-select custom-pill-input w-full h-9 px-3 text-xs font-medium text-gray-700 cursor-pointer"
             >
-              <option>60 menit</option>
-              <option>90 menit</option>
-              <option>120 menit</option>
+              <option value={60}>60 menit</option>
+              <option value={90}>90 menit</option>
+              <option value={120}>120 menit</option>
             </select>
           </div>
+
+          {actionError && (
+            <p className="text-[11px] font-medium text-[#D96B60] mb-2">{actionError}</p>
+          )}
+
+          {isOffline && (
+            <p className="text-[11px] font-medium text-[#9C4A3F] mb-2">
+              ESP32 terputus — perintah tetap dikirim, tetapi alat belum menerima.
+            </p>
+          )}
         </div>
 
-        {/* Action Buttons: Start & Emergency Stop */}
-        <div className="grid grid-cols-2 gap-3 mt-4">
+        {/* Action Buttons */}
+        <div className="space-y-3 mt-4">
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={handleStart}
+              disabled={!canStart || isSaving}
+              className={cn(
+                "font-medium text-xs py-2.5 rounded-full flex items-center justify-center gap-1.5 transition shadow-sm",
+                canStart && !isSaving
+                  ? "bg-[#687A3E] hover:bg-[#586834] text-white cursor-pointer"
+                  : "bg-[#C9CEBE] text-white/80 cursor-not-allowed"
+              )}
+            >
+              <span>▶</span> Mulai
+            </button>
+            <button
+              type="button"
+              onClick={handlePauseResume}
+              disabled={!canPauseResume || isSaving}
+              className={cn(
+                "font-medium text-xs py-2.5 rounded-full flex items-center justify-center gap-1.5 transition",
+                canPauseResume && !isSaving
+                  ? "bg-[#E0E7CF] hover:bg-[#D4DDBE] text-[#556434] cursor-pointer"
+                  : "bg-[#EFEFEA] text-gray-400 cursor-not-allowed"
+              )}
+            >
+              {isPaused ? (
+                <>
+                  <span>▶</span> Lanjutkan
+                </>
+              ) : (
+                <>
+                  <span>❚❚</span> Jeda
+                </>
+              )}
+            </button>
+          </div>
           <button
             type="button"
-            className="bg-[#687A3E] hover:bg-[#586834] text-white font-medium text-xs py-2.5 rounded-full flex items-center justify-center gap-1.5 transition shadow-sm cursor-pointer"
+            onClick={handleStop}
+            disabled={isSaving}
+            className={cn(
+              "w-full font-medium text-xs py-2.5 rounded-full flex items-center justify-center gap-1.5 transition shadow-sm",
+              isSaving
+                ? "bg-[#E6B0A8] text-white/80 cursor-not-allowed"
+                : "bg-[#D96B60] hover:bg-[#C95B50] text-white cursor-pointer"
+            )}
           >
-            <span>▶</span> Mulai
-          </button>
-          <button
-            type="button"
-            className="bg-[#D96B60] hover:bg-[#C95B50] text-white font-medium text-xs py-2.5 rounded-full flex items-center justify-center gap-1.5 transition shadow-sm cursor-pointer"
-          >
-            <span className="text-[10px]">■</span> Stop Darurat
+            <span className="text-[10px]">■</span> Stop / Reset
           </button>
         </div>
       </div>
@@ -123,11 +243,12 @@ export function ControlsSection() {
               <p className="text-[11px] text-gray-500 font-normal">Sensor api</p>
             </div>
             <span
-              className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
+              className={cn(
+                "text-[10px] font-semibold px-2.5 py-0.5 rounded-full",
                 burner1Active
                   ? "bg-[#6B7D41] text-white"
                   : "bg-[#D9DBD0] text-gray-600"
-              }`}
+              )}
             >
               {burner1Active ? "Aktif" : "Mati"}
             </span>
@@ -140,11 +261,12 @@ export function ControlsSection() {
               <p className="text-[11px] text-gray-500 font-normal">Sensor api</p>
             </div>
             <span
-              className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
+              className={cn(
+                "text-[10px] font-semibold px-2.5 py-0.5 rounded-full",
                 burner2Active
                   ? "bg-[#6B7D41] text-white"
                   : "bg-[#D9DBD0] text-gray-600"
-              }`}
+              )}
             >
               {burner2Active ? "Aktif" : "Mati"}
             </span>

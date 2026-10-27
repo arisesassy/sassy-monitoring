@@ -36,7 +36,14 @@ export default function LoginPage() {
       // Store session token in cookie for middleware
       document.cookie = `sb-access-token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
       setIsLoading(false);
-      router.push("/dashboard");
+
+      const redirectTo = new URLSearchParams(window.location.search).get("redirectTo");
+      const safeTarget =
+        redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
+          ? redirectTo
+          : "/dashboard";
+
+      router.push(safeTarget);
     }
   }
 

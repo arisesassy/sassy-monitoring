@@ -1,7 +1,21 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { supabase } from "@/lib/supabase";
+
+export type MachineStatus =
+  | "Mesin Mati"
+  | "Mesin Siap"
+  | "Sedang Proses"
+  | "Jeda"
+  | "Selesai";
 
 export interface TelemetryData {
   id?: number;
@@ -14,12 +28,40 @@ export interface TelemetryData {
   water_level: number;
   process_progress: number;
   remaining_time_seconds: number;
-  machine_status: "Mesin Mati" | "Mesin Siap" | "Sedang Proses" | "Selesai";
+  machine_status: MachineStatus;
   burner1_active: boolean;
   burner2_active: boolean;
   pid_output_percent: number;
   material_type: string;
   duration_minutes: number;
+}
+
+export interface HistoryPoint {
+  timestamp: Date;
+  temp: number;
+  target: number;
+}
+
+const OFFLINE_THRESHOLD_MS = 8_000;
+const CHART_WINDOW_MS = 20 * 60 * 1000;
+const MAX_HISTORY_POINTS = 600;
+
+function mergeHistoryPoints(
+  prev: HistoryPoint[],
+  incoming: HistoryPoint[]
+): HistoryPoint[] {
+  const byTimestamp = new Map<number, HistoryPoint>();
+
+  for (const point of [...prev, ...incoming]) {
+    byTimestamp.set(point.timestamp.getTime(), point);
+  }
+
+  const cutoff = Date.now() - CHART_WINDOW_MS;
+
+  return Array.from(byTimestamp.values())
+    .filter((point) => point.timestamp.getTime() >= cutoff)
+    .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+    .slice(-MAX_HISTORY_POINTS);
 }
 
 const DEFAULT_TELEMETRY: TelemetryData = {
@@ -33,63 +75,111 @@ const DEFAULT_TELEMETRY: TelemetryData = {
   process_progress: 0.0,
   remaining_time_seconds: 0,
   machine_status: "Mesin Siap",
-  burner1_active: true,
+  burner1_active: false,
   burner2_active: false,
-  pid_output_percent: 36.0,
+  pid_output_percent: 0,
   material_type: "Kain",
   duration_minutes: 120,
 };
 
 interface TelemetryContextType {
   telemetry: TelemetryData;
-  historyPoints: { timestamp: Date; temp: number; target: number }[];
+  historyPoints: HistoryPoint[];
   isConnected: boolean;
+  /** Sisa waktu yang sudah didecrement lokal + resync dari server. */
+  remainingSeconds: number;
+  /** True jika row terakhir lebih tua dari 8 detik. */
+  isOffline: boolean;
+  /** False sampai row telemetri pertama diterima. */
+  hasReceivedData: boolean;
+  lastTelemetryAt: Date | null;
 }
 
 const TelemetryContext = createContext<TelemetryContextType>({
   telemetry: DEFAULT_TELEMETRY,
   historyPoints: [],
   isConnected: false,
+  remainingSeconds: 0,
+  isOffline: false,
+  hasReceivedData: false,
+  lastTelemetryAt: null,
 });
 
 export function TelemetryProvider({ children }: { children: ReactNode }) {
   const [telemetry, setTelemetry] = useState<TelemetryData>(DEFAULT_TELEMETRY);
-  const [historyPoints, setHistoryPoints] = useState<{ timestamp: Date; temp: number; target: number }[]>([]);
+  const [historyPoints, setHistoryPoints] = useState<HistoryPoint[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [isOffline, setIsOffline] = useState(false);
+  const [hasReceivedData, setHasReceivedData] = useState(false);
+  const [lastTelemetryAt, setLastTelemetryAt] = useState<Date | null>(null);
+
+  const telemetryRef = useRef<TelemetryData>(DEFAULT_TELEMETRY);
+  const hasReceivedDataRef = useRef(false);
+  const lastTelemetryAtRef = useRef<Date | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
-    // 1. Initial fetch: ambil record telemetri paling baru
-    async function fetchLatest() {
+    function applyTelemetry(row: TelemetryData) {
+      telemetryRef.current = row;
+      hasReceivedDataRef.current = true;
+
+      const receivedAt = new Date(row.timestamp);
+      lastTelemetryAtRef.current = receivedAt;
+
+      setTelemetry(row);
+      setHasReceivedData(true);
+      setLastTelemetryAt(receivedAt);
+
+      // Resync timer ke nilai asli dari server setiap row baru masuk.
+      setRemainingSeconds(
+        Math.max(0, Number(row.remaining_time_seconds) || 0)
+      );
+
+      const point: HistoryPoint = {
+        timestamp: receivedAt,
+        temp: Number(row.temp_actual),
+        target: Number(row.temp_target),
+      };
+
+      setHistoryPoints((prev) => mergeHistoryPoints(prev, [point]));
+    }
+
+    // 1. Initial fetch: status terbaru + riwayat 20 menit terakhir.
+    async function fetchInitial() {
       const { data, error } = await supabase
         .from("telemetry")
         .select("*")
         .order("timestamp", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(MAX_HISTORY_POINTS);
 
       if (error) {
-        console.error("[useTelemetry] fetchLatest error:", error.message, error);
+        console.error("[useTelemetry] fetch error:", error.message, error);
+        return;
       }
 
-      if (!error && data && isMounted) {
-        setTelemetry(data as TelemetryData);
-        setHistoryPoints((prev) => [
-          ...prev,
-          {
-            timestamp: new Date(data.timestamp),
-            temp: Number(data.temp_actual),
-            target: Number(data.temp_target),
-          },
-        ]);
-      }
+      if (!data || data.length === 0 || !isMounted) return;
+
+      applyTelemetry(data[0] as TelemetryData);
+
+      const cutoff = Date.now() - CHART_WINDOW_MS;
+      const points = data
+        .slice()
+        .reverse()
+        .map((row) => ({
+          timestamp: new Date(row.timestamp),
+          temp: Number(row.temp_actual),
+          target: Number(row.temp_target),
+        }))
+        .filter((p) => p.timestamp.getTime() >= cutoff);
+
+      setHistoryPoints((prev) => mergeHistoryPoints(prev, points));
     }
 
-    fetchLatest();
+    fetchInitial();
 
-    // 2. Realtime subscription: single channel dengan unique ID per session
-    // ponytail: single channel context, upgrade to room channel when multiple steamer units exist
+    // 2. Realtime subscription.
     const channelName = `realtime-telemetry-${Date.now()}`;
     const channel = supabase
       .channel(channelName)
@@ -102,26 +192,7 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
         },
         (payload) => {
           if (!isMounted) return;
-          console.log("[useTelemetry] Realtime INSERT received:", payload.new);
-          const newData = payload.new as TelemetryData;
-          setTelemetry(newData);
-          setHistoryPoints((prev) => {
-            const now = Date.now();
-            const twentyMinutesAgo = now - 20 * 60 * 1000;
-            
-            // Tambah point baru
-            const next = [
-              ...prev,
-              {
-                timestamp: new Date(newData.timestamp),
-                temp: Number(newData.temp_actual),
-                target: Number(newData.temp_target),
-              },
-            ];
-            
-            // Filter hanya 20 menit terakhir
-            return next.filter((p) => p.timestamp.getTime() >= twentyMinutesAgo);
-          });
+          applyTelemetry(payload.new as TelemetryData);
         }
       )
       .subscribe((status, err) => {
@@ -135,8 +206,39 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // 3. Tick lokal 1 detik: timer hybrid + deteksi offline.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const last = lastTelemetryAtRef.current;
+      const offline =
+        hasReceivedDataRef.current &&
+        (!last || Date.now() - last.getTime() > OFFLINE_THRESHOLD_MS);
+
+      setIsOffline(offline);
+
+      if (!hasReceivedDataRef.current || offline) return;
+
+      // Hanya berjalan saat proses aktif. "Jeda" tidak mengurangi waktu.
+      if (telemetryRef.current.machine_status === "Sedang Proses") {
+        setRemainingSeconds((prev) => Math.max(0, prev - 1));
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <TelemetryContext.Provider value={{ telemetry, historyPoints, isConnected }}>
+    <TelemetryContext.Provider
+      value={{
+        telemetry,
+        historyPoints,
+        isConnected,
+        remainingSeconds,
+        isOffline,
+        hasReceivedData,
+        lastTelemetryAt,
+      }}
+    >
       {children}
     </TelemetryContext.Provider>
   );

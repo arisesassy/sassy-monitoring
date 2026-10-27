@@ -1,20 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useNotifications } from "@/lib/hooks/use-notifications";
 
 interface NavbarProps {
   className?: string;
 }
-
-const dummyNotifications = [
-  { id: 1, text: "PID baru tersedia untuk ditinjau", time: "2 menit lalu", unread: true },
-  { id: 2, text: "Suhu melebihi batas target 5°C", time: "15 menit lalu", unread: true },
-  { id: 3, text: "Sesi pengukusan #42 selesai", time: "1 jam lalu", unread: false },
-  { id: 4, text: "Level air rendah terdeteksi", time: "3 jam lalu", unread: false },
-];
 
 const dummyProfile = {
   name: "Admin SASSY",
@@ -22,8 +16,17 @@ const dummyProfile = {
   role: "Administrator",
 };
 
+function formatNotifTime(date: Date) {
+  const diff = Date.now() - date.getTime();
+  if (diff < 60_000) return "Baru saja";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} menit lalu`;
+  return date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+}
+
 export function Navbar({ className }: NavbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { notifications, unreadCount, dismiss } = useNotifications();
   const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -34,8 +37,6 @@ export function Navbar({ className }: NavbarProps) {
     { label: "Riwayat", href: "/history" },
     { label: "Akun", href: "/profile" },
   ];
-
-  const unreadCount = dummyNotifications.filter((n) => n.unread).length;
 
   // Close popover on outside click
   useEffect(() => {
@@ -98,12 +99,39 @@ export function Navbar({ className }: NavbarProps) {
                 <h3 className="text-sm font-semibold text-gray-800">Notifikasi</h3>
               </div>
               <div className="max-h-64 overflow-y-auto">
-                {dummyNotifications.map((n) => (
-                  <div key={n.id} className={cn("px-4 py-3 border-b border-gray-50 last:border-0", n.unread && "bg-[#F5F7EE]")}>
-                    <p className="text-xs text-gray-800 font-medium">{n.text}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{n.time}</p>
+                {notifications.length === 0 ? (
+                  <div className="px-4 py-6 text-center">
+                    <p className="text-xs text-gray-400">Tidak ada notifikasi aktif.</p>
                   </div>
-                ))}
+                ) : (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className="px-4 py-3 border-b border-gray-50 last:border-0 bg-[#F5F7EE] flex items-start gap-2"
+                    >
+                      <span
+                        className={cn(
+                          "w-2 h-2 rounded-full mt-1 shrink-0",
+                          n.type === "warn" ? "bg-[#D96B60]" : "bg-[#6E8143]"
+                        )}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-gray-800 font-medium">{n.text}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          {formatNotifTime(n.createdAt)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => dismiss(n.id)}
+                        aria-label="Tutup notifikasi"
+                        className="text-gray-400 hover:text-gray-600 text-sm leading-none cursor-pointer px-1"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -149,7 +177,7 @@ export function Navbar({ className }: NavbarProps) {
                     const { supabase } = await import("@/lib/supabase");
                     await supabase.auth.signOut();
                     document.cookie = "sb-access-token=; path=/; max-age=0";
-                    window.location.href = "/login";
+                    router.replace("/login");
                   }}
                   className="w-full text-left px-4 py-2.5 text-xs font-medium text-[#D96B60] hover:bg-red-50 transition cursor-pointer"
                 >
