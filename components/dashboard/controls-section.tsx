@@ -205,14 +205,14 @@ export function ControlsSection() {
         <PidControl />
 
         {/* Process Control Column */}
-        <div className="custom-card lg:col-span-4 p-6 shadow-sm flex flex-col justify-between min-h-[350px]">
+        <div className="custom-card lg:col-span-4 p-5 shadow-sm flex flex-col justify-between min-h-[330px]">
           <div>
-            <h2 className="text-base font-semibold text-gray-800 mb-4">
+            <h2 className="text-base font-semibold text-gray-800 mb-3">
               Kontrol Proses
             </h2>
 
             {/* Field: Jenis Bahan */}
-            <div className="mb-4">
+            <div className="mb-3">
               <label className="block text-xs font-semibold text-gray-600 mb-1.5">
                 Jenis Bahan
               </label>
@@ -233,7 +233,7 @@ export function ControlsSection() {
             </div>
 
             {/* Suhu target otomatis mengikuti bahan */}
-            <div className="mb-4 flex items-center justify-between rounded-2xl bg-[#F0F2EA] px-4 py-3">
+            <div className="mb-3 flex items-center justify-between rounded-2xl bg-[#F0F2EA] px-4 py-2">
               <div>
                 <span className="block text-[10px] font-semibold uppercase tracking-wide text-gray-500">
                   Suhu Target
@@ -249,7 +249,7 @@ export function ControlsSection() {
             </div>
 
             {/* Field: Durasi */}
-            <div className="mb-4">
+            <div className="mb-3">
               <label className="block text-xs font-semibold text-gray-600 mb-1.5">
                 Durasi
               </label>
@@ -292,89 +292,53 @@ export function ControlsSection() {
                   +
                 </button>
               </div>
-              <p className="mt-1.5 text-[10px] text-gray-400">
-                Angka 60–120 menit. Tombol ± melangkah 5 menit.
-              </p>
             </div>
 
-            {actionError && (
-              <p className="text-[11px] font-medium text-[#D96B60] mb-2">
-                {actionError}
-              </p>
-            )}
-
-            {!isRunning && blockers.length > 0 && (
-              <div className="mb-2 rounded-2xl border border-[#E9C3BC] bg-[#FDF1EE] px-3 py-2.5">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-[#9C4A3F]">
-                  {pausedSession
-                    ? "Belum bisa dilanjutkan"
-                    : "Belum bisa dimulai"}
-                </p>
-                <ul className="mt-1 space-y-1">
-                  {blockers.map((blocker) => (
-                    <li
-                      key={blocker}
-                      className="text-[11px] font-medium leading-snug text-[#9C4A3F]"
-                    >
-                      {blocker}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {sessionActive && !isDeviceOnline && (
-              <p className="text-[11px] font-medium text-[#9C4A3F] mb-2">
-                ESP32 terputus — status sesi terakhir tersimpan. Stop/Reset
-                tetap dikirim dan akan dibaca alat setelah tersambung kembali.
-              </p>
-            )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="space-y-3 mt-4">
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={handleStartClick}
-                disabled={!canStart}
-                className={cn(
-                  "font-medium text-xs py-2.5 rounded-full flex items-center justify-center gap-1.5 transition shadow-sm",
-                  canStart
-                    ? "bg-[#687A3E] hover:bg-[#586834] text-white cursor-pointer"
-                    : "bg-[#C9CEBE] text-white/80 cursor-not-allowed"
-                )}
-              >
-                <span>▶</span> Mulai
-              </button>
-              <button
-                type="button"
-                onClick={handlePauseResume}
-                disabled={!canPauseResume}
-                className={cn(
-                  "font-medium text-xs py-2.5 rounded-full flex items-center justify-center gap-1.5 transition",
-                  canPauseResume
-                    ? "bg-[#E0E7CF] hover:bg-[#D4DDBE] text-[#556434] cursor-pointer"
-                    : "bg-[#EFEFEA] text-gray-400 cursor-not-allowed"
-                )}
-              >
-                {pausedSession ? (
-                  <>
-                    <span>▶</span> Lanjut
-                  </>
-                ) : (
-                  <>
-                    <span>❚❚</span> Jeda
-                  </>
-                )}
-              </button>
-            </div>
+          {/* Action Buttons — satu baris di desktop agar tinggi kartu
+              tidak mendorong ruang kosong pada kartu PID dan burner. */}
+          <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-[1fr_1fr_1.15fr]">
+            <button
+              type="button"
+              onClick={handleStartClick}
+              disabled={!canStart}
+              className={cn(
+                "font-medium text-xs py-2.5 rounded-full flex items-center justify-center gap-1.5 transition shadow-sm whitespace-nowrap",
+                canStart
+                  ? "bg-[#687A3E] hover:bg-[#586834] text-white cursor-pointer"
+                  : "bg-[#C9CEBE] text-white/80 cursor-not-allowed"
+              )}
+            >
+              <span>▶</span> Mulai
+            </button>
+            <button
+              type="button"
+              onClick={handlePauseResume}
+              disabled={!canPauseResume}
+              className={cn(
+                "font-medium text-xs py-2.5 rounded-full flex items-center justify-center gap-1.5 transition whitespace-nowrap",
+                canPauseResume
+                  ? "bg-[#E0E7CF] hover:bg-[#D4DDBE] text-[#556434] cursor-pointer"
+                  : "bg-[#EFEFEA] text-gray-400 cursor-not-allowed"
+              )}
+            >
+              {pausedSession ? (
+                <>
+                  <span>▶</span> Lanjut
+                </>
+              ) : (
+                <>
+                  <span>❚❚</span> Jeda
+                </>
+              )}
+            </button>
             <button
               type="button"
               onClick={handleStop}
               disabled={!canStop}
               className={cn(
-                "w-full font-medium text-xs py-2.5 rounded-full flex items-center justify-center gap-1.5 transition shadow-sm",
+                "w-full col-span-2 lg:col-span-1 font-medium text-xs py-2.5 rounded-full flex items-center justify-center gap-1.5 transition shadow-sm whitespace-nowrap",
                 canStop
                   ? "bg-[#D96B60] hover:bg-[#C95B50] text-white cursor-pointer"
                   : "bg-[#E6B0A8] text-white/80 cursor-not-allowed"
@@ -388,7 +352,7 @@ export function ControlsSection() {
         {/* Right Column: Status Cards */}
         <div className="lg:col-span-4 flex flex-col gap-5 justify-between">
           {/* Status Mesin Card */}
-          <div className="custom-card p-6 shadow-sm flex flex-col justify-center min-h-[130px]">
+          <div className="custom-card p-5 shadow-sm flex flex-col justify-center min-h-[130px]">
             <h3 className="text-xs font-semibold text-gray-600 mb-1">
               Status Mesin
             </h3>
@@ -422,7 +386,7 @@ export function ControlsSection() {
           </div>
 
           {/* Status Burner Card */}
-          <div className="custom-card p-6 shadow-sm flex flex-col justify-between flex-1">
+          <div className="custom-card p-5 shadow-sm flex flex-col justify-between flex-1">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-bold text-gray-700">Status Burner</h3>
               <span
@@ -485,6 +449,43 @@ export function ControlsSection() {
           </div>
         </div>
       </section>
+
+      {/* Alasan blokir diletakkan di luar grid kartu supaya tinggi kartu
+          PID/burner tidak ikut melar saat ada peringatan. */}
+      {(actionError || (!isRunning && blockers.length > 0)) && (
+        <div className="rounded-2xl border border-[#E9C3BC] bg-[#FDF1EE] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[#9C4A3F]">
+            {actionError
+              ? "Perintah gagal"
+              : pausedSession
+                ? "Belum bisa dilanjutkan"
+                : "Belum bisa dimulai"}
+          </p>
+          {actionError && (
+            <p className="mt-1 text-[11px] font-medium leading-snug text-[#9C4A3F]">
+              {actionError}
+            </p>
+          )}
+          {!isRunning && blockers.length > 0 && (
+            <ul className="mt-1 space-y-1">
+              {blockers.map((blocker) => (
+                <li
+                  key={blocker}
+                  className="text-[11px] font-medium leading-snug text-[#9C4A3F]"
+                >
+                  {blocker}
+                </li>
+              ))}
+            </ul>
+          )}
+          {sessionActive && !isDeviceOnline && (
+            <p className="mt-1 text-[11px] font-medium leading-snug text-[#9C4A3F]">
+              ESP32 terputus — status sesi terakhir tersimpan. Stop/Reset tetap
+              dikirim dan akan dibaca alat setelah tersambung kembali.
+            </p>
+          )}
+        </div>
+      )}
 
       <StartConfirmDialog
         open={showConfirm}

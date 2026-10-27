@@ -94,7 +94,7 @@ export function PidControl() {
   }
 
   return (
-    <div className="custom-card lg:col-span-4 p-6 shadow-sm flex flex-col justify-between min-h-[350px]">
+    <div className="custom-card lg:col-span-4 p-5 shadow-sm flex flex-col justify-between min-h-[330px]">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-base font-semibold text-gray-800">Kontrol PID</h2>
@@ -142,7 +142,7 @@ export function PidControl() {
           type="button"
           onClick={handleUpdatePID}
           disabled={isTraining}
-          className="mt-5 w-full bg-[#6E8143] hover:bg-[#5E7036] disabled:opacity-60 text-white font-medium text-xs py-2.5 rounded-full transition shadow-sm cursor-pointer flex items-center justify-center gap-2"
+          className="mt-3 w-full bg-[#6E8143] hover:bg-[#5E7036] disabled:opacity-60 text-white font-medium text-xs py-2.5 rounded-full transition shadow-sm cursor-pointer flex items-center justify-center gap-2"
         >
           {isTraining ? (
             <>
@@ -154,7 +154,7 @@ export function PidControl() {
           )}
         </button>
       ) : (
-        <div className="grid grid-cols-2 gap-3 mt-5">
+        <div className="grid grid-cols-2 gap-3 mt-3">
           <button
             type="button"
             onClick={handleApprove}
