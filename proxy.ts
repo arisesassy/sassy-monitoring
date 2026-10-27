@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const res = NextResponse.next();
   
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Extract session from cookie
+  // Pemeriksaan optimistis. AuthGuard memvalidasi user penuh di sisi client.
   const token = request.cookies.get("sb-access-token")?.value;
   
   if (token) {
