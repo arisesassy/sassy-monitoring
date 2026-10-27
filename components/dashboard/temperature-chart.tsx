@@ -22,7 +22,10 @@ export function TemperatureChart({ data }: TemperatureChartProps) {
   }));
 
   // Cari min/max target untuk reference area
-  const targetTemp = chartData.length > 0 ? chartData[chartData.length - 1]?.target || 70 : 70;
+  const targetTemp =
+    chartData.length > 0
+      ? chartData[chartData.length - 1]?.target || 100
+      : 100;
   const targetMin = targetTemp - 2;
   const targetMax = targetTemp + 2;
 
@@ -39,7 +42,7 @@ export function TemperatureChart({ data }: TemperatureChartProps) {
           stroke="#999"
         />
         <YAxis
-          domain={[20, 100]}
+          domain={[20, 105]}
           tick={{ fontSize: 11, fill: "#999" }}
           stroke="#999"
           label={{ value: "°C", angle: -90, position: "insideLeft", offset: 10 }}

@@ -70,7 +70,7 @@ const DEFAULT_TELEMETRY: TelemetryData = {
   temp_actual: 30.0,
   temp_pt100_1: 30.8,
   temp_pt100_2: 29.7,
-  temp_target: 70.0,
+  temp_target: 100.0,
   water_level: 50.0,
   process_progress: 0.0,
   remaining_time_seconds: 0,
@@ -79,7 +79,7 @@ const DEFAULT_TELEMETRY: TelemetryData = {
   burner2_active: false,
   pid_output_percent: 0,
   material_type: "Kain",
-  duration_minutes: 120,
+  duration_minutes: 60,
 };
 
 interface TelemetryContextType {
@@ -218,8 +218,16 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
 
       if (!hasReceivedDataRef.current || offline) return;
 
-      // Hanya berjalan saat proses aktif. "Jeda" tidak mengurangi waktu.
-      if (telemetryRef.current.machine_status === "Sedang Proses") {
+      // Timer baru berjalan setelah kedua burner terverifikasi aktif.
+      // Saat fase pemantikan, nilai dari ESP32 dibiarkan apa adanya.
+      const current = telemetryRef.current;
+      const bothBurnersActive =
+        Boolean(current.burner1_active) && Boolean(current.burner2_active);
+
+      if (
+        current.machine_status === "Sedang Proses" &&
+        bothBurnersActive
+      ) {
         setRemainingSeconds((prev) => Math.max(0, prev - 1));
       }
     }, 1000);

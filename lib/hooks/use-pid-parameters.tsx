@@ -33,6 +33,10 @@ interface PidParametersContextType {
   hasPending: boolean;
   approvePending: () => Promise<void>;
   rejectPending: () => Promise<void>;
+  replaceActivePid: (
+    materialType: "Kain" | "Kulit",
+    params: PidParams
+  ) => Promise<void>;
 }
 
 const PidParametersContext = createContext<PidParametersContextType>({
@@ -44,6 +48,7 @@ const PidParametersContext = createContext<PidParametersContextType>({
   hasPending: false,
   approvePending: async () => {},
   rejectPending: async () => {},
+  replaceActivePid: async () => {},
 });
 
 export function PidParametersProvider({ children }: { children: ReactNode }) {
@@ -167,6 +172,51 @@ export function PidParametersProvider({ children }: { children: ReactNode }) {
       .eq("status", "pending_review");
   }
 
+  /**
+   * Simpan hasil training ke baris active tanpa DELETE.
+   * UPDATE langsung aman terhadap partial unique index karena status/material
+   * tidak berubah. INSERT hanya dipakai jika belum ada baris active.
+   */
+  async function replaceActivePid(
+    materialType: "Kain" | "Kulit",
+    params: PidParams
+  ) {
+    const { data: active, error: findError } = await supabase
+      .from("pid_parameters")
+      .select("id")
+      .eq("material_type", materialType)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (findError) throw findError;
+
+    if (active) {
+      const { error } = await supabase
+        .from("pid_parameters")
+        .update({
+          kp: params.kp,
+          ki: params.ki,
+          kd: params.kd,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", active.id);
+
+      if (error) throw error;
+      return;
+    }
+
+    const { error } = await supabase.from("pid_parameters").insert({
+      material_type: materialType,
+      kp: params.kp,
+      ki: params.ki,
+      kd: params.kd,
+      status: "active",
+      created_by: "web",
+    });
+
+    if (error) throw error;
+  }
+
   return (
     <PidParametersContext.Provider
       value={{
@@ -175,6 +225,7 @@ export function PidParametersProvider({ children }: { children: ReactNode }) {
         hasPending,
         approvePending,
         rejectPending,
+        replaceActivePid,
       }}
     >
       {children}

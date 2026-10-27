@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -48,6 +49,12 @@ export function SessionControlProvider({ children }: { children: ReactNode }) {
   const [control, setControl] = useState<SessionControlRow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const latestControlRef = useRef<SessionControlRow | null>(null);
+
+  const commitControl = useCallback((row: SessionControlRow) => {
+    latestControlRef.current = row;
+    setControl(row);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -64,7 +71,7 @@ export function SessionControlProvider({ children }: { children: ReactNode }) {
       }
 
       if (isMounted) {
-        if (data) setControl(data as SessionControlRow);
+        if (data) commitControl(data as SessionControlRow);
         setIsLoading(false);
       }
     }
@@ -91,42 +98,50 @@ export function SessionControlProvider({ children }: { children: ReactNode }) {
       isMounted = false;
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [commitControl]);
 
-  const updateControl = useCallback(async (patch: SessionControlPatch) => {
-    setIsSaving(true);
+  const updateControl = useCallback(
+    async (patch: SessionControlPatch) => {
+      setIsSaving(true);
 
-    try {
-      // Pastikan penulisan hanya terjadi dari sesi admin yang sudah login.
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
+      try {
+        // Pastikan penulisan hanya terjadi dari sesi admin yang sudah login.
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
 
-      if (authError || !user) {
-        throw new Error("Sesi login tidak valid. Silakan masuk kembali.");
+        if (authError || !user) {
+          throw new Error("Sesi login tidak valid. Silakan masuk kembali.");
+        }
+
+        // Version harus selalu naik agar ESP32 tidak memproses perintah lama.
+        const currentVersion = Number(latestControlRef.current?.version ?? 0);
+        const version = Math.max(
+          Math.floor(Date.now() / 1000),
+          currentVersion + 1
+        );
+
+        const { data, error } = await supabase
+          .from("session_control")
+          .update({
+            ...patch,
+            version,
+            updated_by: "web",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", 1)
+          .select("*")
+          .maybeSingle();
+
+        if (error) throw error;
+        if (data) commitControl(data as SessionControlRow);
+      } finally {
+        setIsSaving(false);
       }
-
-      const version = Math.floor(Date.now() / 1000);
-
-      const { data, error } = await supabase
-        .from("session_control")
-        .update({
-          ...patch,
-          version,
-          updated_by: "web",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", 1)
-        .select("*")
-        .maybeSingle();
-
-      if (error) throw error;
-      if (data) setControl(data as SessionControlRow);
-    } finally {
-      setIsSaving(false);
-    }
-  }, []);
+    },
+    [commitControl]
+  );
 
   return (
     <SessionControlContext.Provider

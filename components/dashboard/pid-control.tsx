@@ -66,7 +66,10 @@ export function PidControl() {
   const { telemetry } = useTelemetry();
   const { activeParams, pendingParams, hasPending, approvePending, rejectPending } = usePidParameters();
 
-  const pidOutput = safeNum(telemetry?.pid_output_percent, 36.0);
+  const pidOutput = Math.min(
+    100,
+    Math.max(0, safeNum(telemetry?.pid_output_percent, 0))
+  );
 
   async function handleUpdatePID() {
     setIsTraining(true);
@@ -91,8 +94,15 @@ export function PidControl() {
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-base font-semibold text-gray-800">Kontrol PID</h2>
-        <span className="bg-[#61713B] text-white text-[11px] font-medium px-2.5 py-0.5 rounded-full">
-          Output {Math.round(pidOutput)}%
+        <span
+          title="Bukaan katup gas proporsional yang diperintahkan PID. 0% = tertutup rapat, 100% = terbuka penuh."
+          aria-label={`Bukaan gas ${Math.round(pidOutput)} persen. 0 persen berarti katup tertutup rapat, 100 persen berarti terbuka penuh.`}
+          className="bg-[#61713B] text-white text-[10px] font-medium px-2.5 py-0.5 rounded-full cursor-help inline-flex items-center gap-1"
+        >
+          Bukaan Gas {Math.round(pidOutput)}%
+          <span aria-hidden="true" className="text-[9px] opacity-80">
+            ⓘ
+          </span>
         </span>
       </div>
 

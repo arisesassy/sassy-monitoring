@@ -6,6 +6,7 @@ import { SessionTable } from "@/components/history/session-table";
 import { SessionDetail } from "@/components/history/session-detail";
 import { SessionsProvider, useSessions } from "@/lib/hooks/use-sessions";
 import { TelemetryProvider } from "@/lib/hooks/use-telemetry";
+import { SessionControlProvider } from "@/lib/hooks/use-session-control";
 import { NotificationsProvider } from "@/lib/hooks/use-notifications";
 
 function HistoryPageContent() {
@@ -49,11 +50,13 @@ function HistoryPageContent() {
 export default function HistoryPage() {
   return (
     <TelemetryProvider>
-      <NotificationsProvider>
-        <SessionsProvider>
-          <HistoryPageContent />
-        </SessionsProvider>
-      </NotificationsProvider>
+      <SessionControlProvider>
+        <NotificationsProvider>
+          <SessionsProvider>
+            <HistoryPageContent />
+          </SessionsProvider>
+        </NotificationsProvider>
+      </SessionControlProvider>
     </TelemetryProvider>
   );
 }

@@ -2,6 +2,7 @@ import { Navbar } from "@/components/dashboard/navbar";
 import { MetricsRow } from "@/components/dashboard/metrics-row";
 import { ChartsSection } from "@/components/dashboard/charts-section";
 import { ControlsMount } from "@/components/dashboard/controls-mount";
+import { DeviceAlertBanner } from "@/components/dashboard/device-alert-banner";
 import { OfflineBanner } from "@/components/dashboard/offline-banner";
 import { AuthGuard } from "@/components/providers/auth-guard";
 import { TelemetryProvider } from "@/lib/hooks/use-telemetry";
@@ -26,6 +27,7 @@ export default function DashboardPage() {
               >
                 <div className="w-full max-w-[1280px] flex flex-col gap-6">
                   <Navbar />
+                  <DeviceAlertBanner />
                   <OfflineBanner />
                   <MetricsRow />
                   <ChartsSection />

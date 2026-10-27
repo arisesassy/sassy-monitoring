@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { useTelemetry } from "@/lib/hooks/use-telemetry";
+import { getProcessPhase, WATER_MIN } from "@/lib/process-config";
 
 function safeNum(val: unknown, fallback: number): number {
   const n = Number(val);
@@ -23,11 +24,19 @@ export function MetricsRow() {
   const tempActual = safeNum(telemetry?.temp_actual, 30.0);
   const tempPt1 = safeNum(telemetry?.temp_pt100_1, 30.8);
   const tempPt2 = safeNum(telemetry?.temp_pt100_2, 29.7);
-  const tempTarget = safeNum(telemetry?.temp_target, 70.0);
+  const tempTarget = safeNum(telemetry?.temp_target, 100.0);
   const waterLevel = safeNum(telemetry?.water_level, 50.0);
-  const waterLow = waterLevel <= 25;
+  const waterLow = waterLevel < WATER_MIN;
+  const phase = getProcessPhase(telemetry);
 
   const isMuted = hasReceivedData && isOffline;
+  const timerSubtitle = isMuted
+    ? "Data terakhir"
+    : phase?.key === "ignition"
+      ? "Menunggu verifikasi api"
+      : phase
+        ? "Timer berjalan"
+        : telemetry?.machine_status || "Mesin Siap";
 
   return (
     <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -141,9 +150,7 @@ export function MetricsRow() {
             {formatTime(remainingSeconds)}
           </span>
         </div>
-        <p className="text-xs text-gray-500 font-normal">
-          {isMuted ? "Data terakhir" : telemetry?.machine_status || "Mesin Siap"}
-        </p>
+        <p className="text-xs text-gray-500 font-normal">{timerSubtitle}</p>
       </div>
     </section>
   );
