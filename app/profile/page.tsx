@@ -20,8 +20,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <TelemetryProvider>
-      <SessionControlProvider>
+    <SessionControlProvider>
+      <TelemetryProvider>
         <NotificationsProvider>
           <main
             className="min-h-screen p-6 md:p-10 flex flex-col items-center"
@@ -43,7 +43,7 @@ export default function ProfilePage() {
             </div>
           </main>
         </NotificationsProvider>
-      </SessionControlProvider>
-    </TelemetryProvider>
+      </TelemetryProvider>
+    </SessionControlProvider>
   );
 }

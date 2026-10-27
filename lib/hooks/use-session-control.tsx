@@ -78,6 +78,10 @@ export function SessionControlProvider({ children }: { children: ReactNode }) {
 
     fetchControl();
 
+    // Fallback polling: heartbeat standby datang tiap 10 detik. Polling ini
+    // menjaga deteksi online tetap akurat jika kanal Realtime terputus.
+    const pollInterval = setInterval(fetchControl, 10_000);
+
     const channelName = `realtime-session-control-${Date.now()}`;
     const channel = supabase
       .channel(channelName)
@@ -96,6 +100,7 @@ export function SessionControlProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isMounted = false;
+      clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
   }, [commitControl]);

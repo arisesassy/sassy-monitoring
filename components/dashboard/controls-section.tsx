@@ -22,12 +22,19 @@ import {
 } from "@/lib/process-config";
 
 export function ControlsSection() {
-  const { telemetry, isOffline, hasReceivedData } = useTelemetry();
+  const {
+    telemetry,
+    isDeviceOnline,
+    hasDevicePresence,
+    displayMachineStatus,
+    displayWaterLevel,
+    isStandby,
+  } = useTelemetry();
   const { control, updateControl, isSaving } = useSessionControl();
   const { clearLowWater } = useNotifications();
 
-  // Nilai awal diambil dari session_control. Komponen di-remount oleh
-  // ControlsMount saat kontrol berubah, jadi tidak perlu effect sync.
+  // Nilai awal diambil dari session_control. ControlsMount me-remount hanya
+  // saat field form berubah, jadi heartbeat standby tidak mereset input.
   const [material, setMaterial] = useState<MaterialType>(() =>
     normalizeMaterial(control?.material_type)
   );
@@ -44,48 +51,60 @@ export function ControlsSection() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const machineStatus = telemetry?.machine_status || "Mesin Siap";
-  const burner1Active = Boolean(telemetry?.burner1_active);
-  const burner2Active = Boolean(telemetry?.burner2_active);
+  const machineStatus = displayMachineStatus;
+  const controlStatus = control?.status;
+
+  const isRunning = isDeviceOnline && machineStatus === "Sedang Proses";
+  const isPaused = isDeviceOnline && machineStatus === "Jeda";
+  const pausedSession = isPaused || controlStatus === "paused";
+  const sessionActive =
+    controlStatus === "running" ||
+    controlStatus === "paused" ||
+    isRunning ||
+    isPaused;
+  const inputsLocked = sessionActive;
+
+  // Saat standby atau jeda, gas pasti tertutup. Jangan tampilkan status
+  // burner aktif dari row telemetri sesi lama.
+  const burnersTrusted = isDeviceOnline && !isStandby && !isPaused;
+  const burner1Active =
+    burnersTrusted && Boolean(telemetry?.burner1_active);
+  const burner2Active =
+    burnersTrusted && Boolean(telemetry?.burner2_active);
   const bothBurnersActive = burner1Active && burner2Active;
   const anyBurnerActive = burner1Active || burner2Active;
-
-  const isRunning = machineStatus === "Sedang Proses";
-  const isPaused =
-    !isRunning && (machineStatus === "Jeda" || control?.status === "paused");
-  const inputsLocked = isRunning || isPaused;
 
   const duration = Number(durationInput);
   const durationValid = isValidDuration(duration);
   const targetTemp = getTargetTemp(material);
-  const phase = getProcessPhase(telemetry);
+  const phase = isRunning ? getProcessPhase(telemetry) : null;
 
-  const rawWaterLevel = Number(telemetry?.water_level);
-  const waterValid = Number.isFinite(rawWaterLevel);
-  const waterOk = waterValid && rawWaterLevel >= WATER_MIN;
-  const online = hasReceivedData && !isOffline;
+  const rawWaterLevel = displayWaterLevel;
+  const waterOk = rawWaterLevel !== null && rawWaterLevel >= WATER_MIN;
+  const online = isDeviceOnline;
 
   const canStart =
-    !isRunning && !isPaused && waterOk && online && durationValid && !isSaving;
+    !sessionActive && waterOk && online && durationValid && !isSaving;
   const canPause = isRunning && !isSaving;
   const canResume = isPaused && waterOk && online && !isSaving;
   const canPauseResume = isRunning ? canPause : canResume;
   const canStop = !isSaving;
 
   const blockers: string[] = [];
-  if (!hasReceivedData) {
-    blockers.push("Menunggu data telemetri dari ESP32.");
-  } else if (isOffline) {
-    blockers.push("ESP32 offline — perintah Mulai/Lanjut belum bisa dikirim.");
-  }
-  if (!waterValid) {
-    blockers.push("Level air belum terbaca dengan valid.");
+  if (!isDeviceOnline) {
+    blockers.push(
+      hasDevicePresence
+        ? "ESP32 offline — heartbeat terakhir lebih dari 25 detik lalu."
+        : "Menunggu heartbeat ESP32. Pastikan alat menyala dan terhubung."
+    );
+  } else if (rawWaterLevel === null) {
+    blockers.push("Menunggu data level air dari ESP32.");
   } else if (!waterOk) {
     blockers.push(
       `Level air ${formatWaterLevel(rawWaterLevel)} — minimal ${WATER_MIN}% untuk memulai/melanjutkan.`
     );
   }
-  if (!durationValid && !isPaused) {
+  if (!durationValid && !pausedSession) {
     blockers.push(
       `Durasi harus berupa angka ${DURATION_MIN}–${DURATION_MAX} menit.`
     );
@@ -287,7 +306,9 @@ export function ControlsSection() {
             {!isRunning && blockers.length > 0 && (
               <div className="mb-2 rounded-2xl border border-[#E9C3BC] bg-[#FDF1EE] px-3 py-2.5">
                 <p className="text-[10px] font-bold uppercase tracking-wide text-[#9C4A3F]">
-                  {isPaused ? "Belum bisa dilanjutkan" : "Belum bisa dimulai"}
+                  {pausedSession
+                    ? "Belum bisa dilanjutkan"
+                    : "Belum bisa dimulai"}
                 </p>
                 <ul className="mt-1 space-y-1">
                   {blockers.map((blocker) => (
@@ -302,10 +323,10 @@ export function ControlsSection() {
               </div>
             )}
 
-            {isRunning && isOffline && (
+            {sessionActive && !isDeviceOnline && (
               <p className="text-[11px] font-medium text-[#9C4A3F] mb-2">
-                ESP32 terputus — perintah Jeda/Stop tetap dikirim, tetapi alat
-                belum menerima.
+                ESP32 terputus — status sesi terakhir tersimpan. Stop/Reset
+                tetap dikirim dan akan dibaca alat setelah tersambung kembali.
               </p>
             )}
           </div>
@@ -337,7 +358,7 @@ export function ControlsSection() {
                     : "bg-[#EFEFEA] text-gray-400 cursor-not-allowed"
                 )}
               >
-                {isPaused ? (
+                {pausedSession ? (
                   <>
                     <span>▶</span> Lanjut
                   </>

@@ -10,7 +10,10 @@ export function DeviceAlertBanner() {
   const { control } = useSessionControl();
 
   const isControlPaused = control?.status === "paused";
-  const isTelemetryPaused = telemetry?.machine_status === "Jeda";
+  const isControlStandby =
+    control?.status === "idle" || control?.status === "stopped";
+  const isTelemetryPaused =
+    !isControlStandby && telemetry?.machine_status === "Jeda";
 
   if (!isControlPaused && !isTelemetryPaused) return null;
 

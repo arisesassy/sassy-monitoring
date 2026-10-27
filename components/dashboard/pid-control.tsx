@@ -63,13 +63,17 @@ function CompareRow({
 
 export function PidControl() {
   const [isTraining, setIsTraining] = useState(false);
-  const { telemetry } = useTelemetry();
+  const { telemetry, isDeviceOnline, isStandby, displayMachineStatus } =
+    useTelemetry();
   const { activeParams, pendingParams, hasPending, approvePending, rejectPending } = usePidParameters();
 
-  const pidOutput = Math.min(
-    100,
-    Math.max(0, safeNum(telemetry?.pid_output_percent, 0))
-  );
+  // Saat standby/jeda/offline tidak ada pembakaran aktif, jadi jangan
+  // tampilkan bukaan gas dari row telemetri sesi lama.
+  const gasClosed =
+    !isDeviceOnline || isStandby || displayMachineStatus === "Jeda";
+  const pidOutput = gasClosed
+    ? 0
+    : Math.min(100, Math.max(0, safeNum(telemetry?.pid_output_percent, 0)));
 
   async function handleUpdatePID() {
     setIsTraining(true);

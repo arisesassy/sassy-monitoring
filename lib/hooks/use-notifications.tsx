@@ -35,18 +35,28 @@ const NotificationsContext = createContext<NotificationsContextType>({
 });
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const { telemetry } = useTelemetry();
+  const {
+    telemetry,
+    displayWaterLevel,
+    isStandby,
+    standbyWaterLevel,
+  } = useTelemetry();
   const { control } = useSessionControl();
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
-  const waterLevel = Number(telemetry?.water_level);
-  const waterLow = Number.isFinite(waterLevel) && waterLevel < WATER_MIN;
+  const waterLow =
+    displayWaterLevel !== null && displayWaterLevel < WATER_MIN;
 
   const isPaused =
-    control?.status === "paused" || telemetry?.machine_status === "Jeda";
+    control?.status === "paused" ||
+    (telemetry?.machine_status === "Jeda" &&
+      control?.status !== "idle" &&
+      control?.status !== "stopped");
   const pauseReason =
     control?.status === "paused" ? control.updated_by : null;
   const pauseAlert = isPaused ? getPauseAlert(pauseReason) : null;
+  const isStandbySession =
+    control?.status === "idle" || control?.status === "stopped";
 
   const dismiss = useCallback((id: string) => {
     setDismissed((prev) => new Set(prev).add(id));
@@ -65,14 +75,20 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const telemetryAt = telemetry?.timestamp
     ? new Date(telemetry.timestamp)
     : new Date();
+  const waterAt =
+    isStandby && standbyWaterLevel !== null && control?.updated_at
+      ? new Date(control.updated_at)
+      : telemetryAt;
 
   // Pause karena low water sudah diwakili oleh alert device yang lebih presisi.
   if (waterLow && pauseAlert?.key !== "device:low_water") {
     notifications.push({
       id: "low-water",
       type: "warn",
-      text: "Level air rendah (<25%), mesin akan dijeda otomatis",
-      createdAt: telemetryAt,
+      text: isStandbySession
+        ? "Level air rendah (<25%), sesi belum bisa dimulai"
+        : "Level air rendah (<25%), mesin akan dijeda otomatis",
+      createdAt: waterAt,
     });
   }
 

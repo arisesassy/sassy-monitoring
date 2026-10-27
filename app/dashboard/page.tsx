@@ -17,9 +17,9 @@ export const metadata = {
 export default function DashboardPage() {
   return (
     <AuthGuard>
-      <TelemetryProvider>
-        <PidParametersProvider>
-          <SessionControlProvider>
+      <SessionControlProvider>
+        <TelemetryProvider>
+          <PidParametersProvider>
             <NotificationsProvider>
               <main
                 className="min-h-screen p-6 md:p-8 pb-16 flex justify-center"
@@ -35,9 +35,9 @@ export default function DashboardPage() {
                 </div>
               </main>
             </NotificationsProvider>
-          </SessionControlProvider>
-        </PidParametersProvider>
-      </TelemetryProvider>
+          </PidParametersProvider>
+        </TelemetryProvider>
+      </SessionControlProvider>
     </AuthGuard>
   );
 }

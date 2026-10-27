@@ -33,9 +33,28 @@ export function isValidDuration(value: number): boolean {
   );
 }
 
-export function formatWaterLevel(value: number): string {
-  if (!Number.isFinite(value)) return "—";
-  return `${Number.isInteger(value) ? value : value.toFixed(1)}%`;
+export function formatWaterLevel(value: number | null | undefined): string {
+  if (value === null || value === undefined) return "—";
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "—";
+  return `${Number.isInteger(numeric) ? numeric : numeric.toFixed(1)}%`;
+}
+
+/**
+ * Heartbeat standby ESP32 menulis `updated_by` berformat `device:idle:<level>`.
+ * Nilai ini adalah sumber level air real-time saat mesin idle/stopped dan
+ * sengaja tidak membuat row baru di tabel telemetry.
+ */
+export function parseStandbyWaterLevel(
+  updatedBy: string | null | undefined
+): number | null {
+  if (!updatedBy) return null;
+
+  const match = /^device:idle:(\d+)$/.exec(updatedBy);
+  if (!match) return null;
+
+  const level = Number(match[1]);
+  return Number.isFinite(level) && level >= 0 && level <= 100 ? level : null;
 }
 
 export type ProcessPhaseKey = "ignition" | "heating" | "stable";

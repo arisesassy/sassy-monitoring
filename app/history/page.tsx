@@ -49,14 +49,14 @@ function HistoryPageContent() {
 
 export default function HistoryPage() {
   return (
-    <TelemetryProvider>
-      <SessionControlProvider>
+    <SessionControlProvider>
+      <TelemetryProvider>
         <NotificationsProvider>
           <SessionsProvider>
             <HistoryPageContent />
           </SessionsProvider>
         </NotificationsProvider>
-      </SessionControlProvider>
-    </TelemetryProvider>
+      </TelemetryProvider>
+    </SessionControlProvider>
   );
 }

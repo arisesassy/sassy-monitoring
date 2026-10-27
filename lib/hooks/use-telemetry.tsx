@@ -8,7 +8,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { parseStandbyWaterLevel } from "@/lib/process-config";
 import { supabase } from "@/lib/supabase";
+import { useSessionControl } from "@/lib/hooks/use-session-control";
 
 export type MachineStatus =
   | "Mesin Mati"
@@ -42,7 +44,10 @@ export interface HistoryPoint {
   target: number;
 }
 
-const OFFLINE_THRESHOLD_MS = 8_000;
+/** ESP32 dianggap online jika aktivitas terakhir <= 25 detik. */
+const DEVICE_PRESENCE_TIMEOUT_MS = 25_000;
+/** Timer lokal hanya jalan saat telemetri masih segar (kiriman tiap 2 detik). */
+const TELEMETRY_STALE_MS = 8_000;
 const CHART_WINDOW_MS = 20 * 60 * 1000;
 const MAX_HISTORY_POINTS = 600;
 
@@ -62,6 +67,27 @@ function mergeHistoryPoints(
     .filter((point) => point.timestamp.getTime() >= cutoff)
     .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
     .slice(-MAX_HISTORY_POINTS);
+}
+
+function parseValidTimestamp(value: unknown): Date | null {
+  const parsed = new Date(String(value ?? ""));
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function parseTimestamp(value: unknown): Date {
+  return parseValidTimestamp(value) ?? new Date();
+}
+
+function latestDate(a: Date | null, b: Date | null): Date | null {
+  if (!a) return b;
+  if (!b) return a;
+  return a.getTime() >= b.getTime() ? a : b;
+}
+
+function toFiniteNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
 }
 
 const DEFAULT_TELEMETRY: TelemetryData = {
@@ -88,11 +114,24 @@ interface TelemetryContextType {
   isConnected: boolean;
   /** Sisa waktu yang sudah didecrement lokal + resync dari server. */
   remainingSeconds: number;
-  /** True jika row terakhir lebih tua dari 8 detik. */
+  /** True jika tidak ada aktivitas perangkat dalam 25 detik terakhir. */
   isOffline: boolean;
+  isDeviceOnline: boolean;
+  /** True setelah web pernah menerima timestamp perangkat. */
+  hasDevicePresence: boolean;
+  /** Timestamp aktivitas terbaru dari telemetry atau heartbeat `device:*`. */
+  lastDeviceSeenAt: Date | null;
   /** False sampai row telemetri pertama diterima. */
   hasReceivedData: boolean;
   lastTelemetryAt: Date | null;
+  /** Online dan session_control berstatus idle/stopped. */
+  isStandby: boolean;
+  /** Level air dari heartbeat `device:idle:<level>`, jika ada. */
+  standbyWaterLevel: number | null;
+  /** Level air yang ditampilkan: heartbeat standby atau telemetry. */
+  displayWaterLevel: number | null;
+  /** Status mesin yang sudah memperhitungkan koneksi dan status standby. */
+  displayMachineStatus: MachineStatus;
 }
 
 const TelemetryContext = createContext<TelemetryContextType>({
@@ -100,37 +139,80 @@ const TelemetryContext = createContext<TelemetryContextType>({
   historyPoints: [],
   isConnected: false,
   remainingSeconds: 0,
-  isOffline: false,
+  isOffline: true,
+  isDeviceOnline: false,
+  hasDevicePresence: false,
+  lastDeviceSeenAt: null,
   hasReceivedData: false,
   lastTelemetryAt: null,
+  isStandby: false,
+  standbyWaterLevel: null,
+  displayWaterLevel: null,
+  displayMachineStatus: "Mesin Mati",
 });
 
 export function TelemetryProvider({ children }: { children: ReactNode }) {
+  const { control } = useSessionControl();
   const [telemetry, setTelemetry] = useState<TelemetryData>(DEFAULT_TELEMETRY);
   const [historyPoints, setHistoryPoints] = useState<HistoryPoint[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
-  const [isOffline, setIsOffline] = useState(false);
+  const [isDeviceOnline, setIsDeviceOnline] = useState(false);
   const [hasReceivedData, setHasReceivedData] = useState(false);
   const [lastTelemetryAt, setLastTelemetryAt] = useState<Date | null>(null);
 
   const telemetryRef = useRef<TelemetryData>(DEFAULT_TELEMETRY);
-  const hasReceivedDataRef = useRef(false);
   const lastTelemetryAtRef = useRef<Date | null>(null);
+  const lastDeviceSeenAtRef = useRef<Date | null>(null);
+  const controlStatusRef = useRef<string | null>(null);
+
+  // Aktivitas dari session_control hanya dihitung jika ditulis perangkat.
+  // PATCH dari web tidak boleh membuat ESP32 terlihat online.
+  useEffect(() => {
+    controlStatusRef.current = control?.status ?? null;
+
+    if (!control?.updated_by?.startsWith("device")) return;
+
+    const seenAt = parseValidTimestamp(control.updated_at);
+    if (
+      seenAt &&
+      (!lastDeviceSeenAtRef.current || seenAt > lastDeviceSeenAtRef.current)
+    ) {
+      lastDeviceSeenAtRef.current = seenAt;
+    }
+  }, [control?.status, control?.updated_at, control?.updated_by]);
 
   useEffect(() => {
     let isMounted = true;
 
     function applyTelemetry(row: TelemetryData) {
       telemetryRef.current = row;
-      hasReceivedDataRef.current = true;
 
-      const receivedAt = new Date(row.timestamp);
-      lastTelemetryAtRef.current = receivedAt;
+      const receivedAt = parseTimestamp(row.timestamp);
+
+      if (
+        !lastTelemetryAtRef.current ||
+        receivedAt > lastTelemetryAtRef.current
+      ) {
+        lastTelemetryAtRef.current = receivedAt;
+        setLastTelemetryAt(receivedAt);
+      }
+
+      if (
+        !lastDeviceSeenAtRef.current ||
+        receivedAt > lastDeviceSeenAtRef.current
+      ) {
+        lastDeviceSeenAtRef.current = receivedAt;
+      }
+
+      if (
+        Date.now() - receivedAt.getTime() <= DEVICE_PRESENCE_TIMEOUT_MS
+      ) {
+        setIsDeviceOnline(true);
+      }
 
       setTelemetry(row);
       setHasReceivedData(true);
-      setLastTelemetryAt(receivedAt);
 
       // Resync timer ke nilai asli dari server setiap row baru masuk.
       setRemainingSeconds(
@@ -168,7 +250,7 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
         .slice()
         .reverse()
         .map((row) => ({
-          timestamp: new Date(row.timestamp),
+          timestamp: parseTimestamp(row.timestamp),
           temp: Number(row.temp_actual),
           target: Number(row.temp_target),
         }))
@@ -206,17 +288,34 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // 3. Tick lokal 1 detik: timer hybrid + deteksi offline.
+  // 3. Tick lokal 1 detik: timer hybrid + deteksi online/offline.
   useEffect(() => {
     const interval = setInterval(() => {
-      const last = lastTelemetryAtRef.current;
-      const offline =
-        hasReceivedDataRef.current &&
-        (!last || Date.now() - last.getTime() > OFFLINE_THRESHOLD_MS);
+      const seenAt = lastDeviceSeenAtRef.current;
+      const online =
+        !!seenAt &&
+        Date.now() - seenAt.getTime() <= DEVICE_PRESENCE_TIMEOUT_MS;
 
-      setIsOffline(offline);
+      setIsDeviceOnline((prev) => (prev === online ? prev : online));
 
-      if (!hasReceivedDataRef.current || offline) return;
+      if (!online) return;
+
+      // Timer hanya boleh jalan saat sesi aktif dan telemetri masih segar.
+      const lastTelemetry = lastTelemetryAtRef.current;
+      const telemetryFresh =
+        !!lastTelemetry &&
+        Date.now() - lastTelemetry.getTime() <= TELEMETRY_STALE_MS;
+
+      if (!telemetryFresh) return;
+
+      const controlStatus = controlStatusRef.current;
+      if (
+        controlStatus === "idle" ||
+        controlStatus === "stopped" ||
+        controlStatus === "paused"
+      ) {
+        return;
+      }
 
       // Timer baru berjalan setelah kedua burner terverifikasi aktif.
       // Saat fase pemantikan, nilai dari ESP32 dibiarkan apa adanya.
@@ -235,6 +334,44 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, []);
 
+  const lastControlSeenAt =
+    control?.updated_by?.startsWith("device") && control.updated_at
+      ? parseValidTimestamp(control.updated_at)
+      : null;
+  const lastDeviceSeenAt = latestDate(lastTelemetryAt, lastControlSeenAt);
+  const hasDevicePresence = lastDeviceSeenAt !== null;
+  const isOffline = !isDeviceOnline;
+  const isStandby =
+    isDeviceOnline &&
+    (control?.status === "idle" || control?.status === "stopped");
+  const standbyWaterLevel = parseStandbyWaterLevel(control?.updated_by);
+  const telemetryWaterLevel = hasReceivedData
+    ? toFiniteNumber(telemetry?.water_level)
+    : null;
+  const displayWaterLevel = isStandby
+    ? (standbyWaterLevel ?? telemetryWaterLevel)
+    : telemetryWaterLevel;
+
+  let displayMachineStatus: MachineStatus =
+    telemetry.machine_status || "Mesin Siap";
+
+  if (!isDeviceOnline) {
+    displayMachineStatus = "Mesin Mati";
+  } else if (control?.status === "idle") {
+    displayMachineStatus = "Mesin Siap";
+  } else if (control?.status === "paused") {
+    displayMachineStatus = "Jeda";
+  } else if (control?.status === "stopped") {
+    displayMachineStatus =
+      telemetry.machine_status === "Selesai" ? "Selesai" : "Mesin Siap";
+  } else if (
+    control?.status === "running" &&
+    (telemetry.machine_status === "Mesin Siap" ||
+      telemetry.machine_status === "Selesai")
+  ) {
+    displayMachineStatus = "Sedang Proses";
+  }
+
   return (
     <TelemetryContext.Provider
       value={{
@@ -243,8 +380,15 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
         isConnected,
         remainingSeconds,
         isOffline,
+        isDeviceOnline,
+        hasDevicePresence,
+        lastDeviceSeenAt,
         hasReceivedData,
         lastTelemetryAt,
+        isStandby,
+        standbyWaterLevel,
+        displayWaterLevel,
+        displayMachineStatus,
       }}
     >
       {children}
