@@ -40,6 +40,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - `references/login.html` -> `/login`
 - Aturan: bangun struktur dan komponen identik referensi dulu. Motion polish menyusul.
 
+## Skill UI
+- Wajib: setiap kali mengerjakan UI (halaman, komponen, layout, styling, motion, atau redesign), muat skill `design-taste-frontend` terlebih dahulu dan ikuti panduannya sebelum menulis atau mengubah kode.
+
 ## Workflow
 - Commit ke git setiap perubahan penting (fitur baru, refactor, fix). Pesan commit ringkas, deskriptif.
 
