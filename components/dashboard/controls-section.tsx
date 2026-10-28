@@ -12,6 +12,7 @@ import {
   DURATION_MIN,
   DURATION_STEP,
   MATERIAL_OPTIONS,
+  MATERIAL_PROFILES,
   WATER_MIN,
   formatWaterLevel,
   getProcessPhase,
@@ -20,6 +21,13 @@ import {
   normalizeMaterial,
   type MaterialType,
 } from "@/lib/process-config";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function ControlsSection() {
   const {
@@ -216,20 +224,32 @@ export function ControlsSection() {
               <label className="block text-xs font-semibold text-gray-600 mb-1.5">
                 Jenis Bahan
               </label>
-              <select
+              <Select
                 value={material}
-                onChange={(event) =>
-                  setMaterial(normalizeMaterial(event.target.value))
+                onValueChange={(val) =>
+                  setMaterial(normalizeMaterial(val))
                 }
                 disabled={inputsLocked || isSaving}
-                className="custom-select custom-pill-input w-full h-10 px-4 text-xs font-medium text-gray-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {MATERIAL_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  aria-label="Pilih jenis bahan"
+                  className="w-full h-10 px-4 text-xs font-medium text-gray-700 border border-[#738450] bg-[#FAFAF7] rounded-full hover:bg-white transition cursor-pointer"
+                >
+                  <SelectValue>{material}</SelectValue>
+                </SelectTrigger>
+                <SelectContent className="w-[var(--radix-select-trigger-width)]">
+                  {MATERIAL_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      <span className="flex items-center justify-between w-full pr-1">
+                        <span className="font-medium text-gray-800">{option}</span>
+                        <span className="text-[10px] font-semibold text-[#6E8143] bg-[#EEF1E7] px-2 py-0.5 rounded-full">
+                          {MATERIAL_PROFILES[option].targetTemp}°C
+                        </span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Suhu target otomatis mengikuti bahan */}
