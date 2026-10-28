@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, ImageIcon, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -58,11 +59,6 @@ export default function LoginPage() {
       <div className="mx-auto grid min-h-[100dvh] max-w-[1600px] grid-cols-1 lg:grid-cols-2">
         <section className="flex min-w-0 flex-col px-6 py-8 sm:px-12 lg:px-16 lg:py-10">
           <header className="flex items-center gap-2.5">
-            <ShieldCheck
-              aria-hidden="true"
-              className="h-6 w-6 text-[#6E8143]"
-              strokeWidth={1.8}
-            />
             <p className="text-sm font-semibold tracking-tight">SASSY Monitoring</p>
           </header>
 
@@ -162,12 +158,27 @@ export default function LoginPage() {
           </footer>
         </section>
 
-        <aside className="hidden p-5 pl-0 lg:flex">
-          {/* TODO: ganti placeholder ini dengan hero image 1600x1800. */}
-          <div className="flex w-full items-center justify-center rounded-xl bg-[#E8ECDD]">
-            <div className="flex flex-col items-center gap-3 text-[#626A57]">
-              <ImageIcon aria-hidden="true" className="h-6 w-6" strokeWidth={1.8} />
-              <p className="text-xs">Gambar perangkat</p>
+        <aside className="hidden p-4 pl-0 lg:flex">
+          <div className="relative flex w-full overflow-hidden rounded-2xl border border-[#E1E5D8] bg-[#E8ECDD]">
+            <Image
+              src="/images/login-hero.webp"
+              alt="Perangkat Steamer SASSY"
+              fill
+              priority
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              className="object-cover object-center"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"
+            />
+            <div className="relative mt-auto p-8 text-white">
+              <p className="text-base font-semibold tracking-tight text-white/95">
+                Sistem Pengukusan Presisi
+              </p>
+              <p className="mt-1 max-w-sm text-xs leading-relaxed text-white/80">
+                Otomasi suhu dan kontrol pembakaran untuk pengolahan kain dan kulit.
+              </p>
             </div>
           </div>
         </aside>
