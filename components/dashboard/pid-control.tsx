@@ -81,9 +81,24 @@ export function PidControl() {
     setTrainError(null);
 
     try {
+      const { supabase } = await import("@/lib/supabase");
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+        const secure = location.protocol === "https:" ? "; Secure" : "";
+        document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${session.expires_in}; SameSite=Lax${secure}`;
+      }
+
       const response = await fetch("/api/train-pid", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
       });
 
       const result = await response.json().catch(() => null);

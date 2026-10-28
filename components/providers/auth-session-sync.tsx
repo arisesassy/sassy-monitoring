@@ -14,6 +14,13 @@ function clearAccessToken() {
 
 export function AuthSessionSync({ children }: { children: ReactNode }) {
   useEffect(() => {
+    // Sinkronisasi token awal saat komponen pertama kali mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        writeAccessToken(session.access_token, session.expires_in);
+      }
+    });
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {

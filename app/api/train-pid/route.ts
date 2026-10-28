@@ -3,8 +3,13 @@ import type { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export async function POST(request: NextRequest) {
-  // 1. Verifikasi autentikasi user via cookie sb-access-token
-  const token = request.cookies.get("sb-access-token")?.value;
+  // 1. Verifikasi autentikasi user via Authorization header atau cookie sb-access-token
+  const authHeader = request.headers.get("authorization");
+  const bearerToken = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7).trim()
+    : null;
+  const token = bearerToken || request.cookies.get("sb-access-token")?.value;
+
   if (!token) {
     return NextResponse.json(
       { error: "Sesi tidak ditemukan. Silakan login kembali." },
