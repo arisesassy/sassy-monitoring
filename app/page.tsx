@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CinematicHero } from "@/components/ui/cinematic-landing-hero";
 import { AboutSassy } from "@/components/landing/about-sassy";
+import { ElectronicsFlow } from "@/components/landing/electronics-flow";
 
 export const metadata: Metadata = {
   title: "SASSY | Pengukusan Terukur",
@@ -12,6 +13,7 @@ export default function Home() {
     <main className="min-h-[100dvh] overflow-x-clip bg-[#F8F9F5] text-[#2B3024]">
       <CinematicHero />
       <AboutSassy />
+      <ElectronicsFlow />
     </main>
   );
 }
