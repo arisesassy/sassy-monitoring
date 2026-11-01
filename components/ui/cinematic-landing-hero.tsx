@@ -89,8 +89,7 @@ export function CinematicHero() {
   }, []);
 
   return (
-    <main className="min-h-[100dvh] overflow-x-clip bg-[#F8F9F5] text-[#2B3024]">
-      <section ref={sectionRef} className="mx-auto flex min-h-[100dvh] max-w-[1400px] flex-col px-5 pb-6 sm:px-8 lg:px-12">
+    <section ref={sectionRef} className="mx-auto flex min-h-[100dvh] max-w-[1400px] flex-col px-5 pb-6 sm:px-8 lg:px-12">
         <header className="flex h-[72px] shrink-0 items-center justify-between border-b border-[#DCE0D4]">
           <Link href="/" className="text-lg font-extrabold tracking-[-0.05em] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6E8143]">
             SASSY<span className="text-[#6E8143]">.</span>
@@ -147,7 +146,6 @@ export function CinematicHero() {
             </div>
           </div>
         </div>
-      </section>
-    </main>
+    </section>
   );
 }

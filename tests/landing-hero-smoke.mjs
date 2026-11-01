@@ -11,8 +11,12 @@ assert.equal((html.match(/data-hero-badge/g) ?? []).length, 3, "Tiga badge alat 
 assert.match(html, /Pemantauan suhu/);
 assert.match(html, /Kendali burner/);
 assert.match(html, /Level air terpantau/);
+assert.match(html, /id="tentang"/);
+assert.match(html, /Satu alat\. Proses yang bisa/);
+assert.match(html, /visual perangkat sementara/);
+assert.ok(html.indexOf("Pengukusan lebih") < html.indexOf("Satu alat. Proses yang bisa"), "About mengikuti hero");
 assert.doesNotMatch(html, /ArrowDownRight|ArrowUpRight/);
 assert.doesNotMatch(html, /Sobers|Days Sober|App Store/);
 const image = await fetch(`${origin}/images/login-hero.webp`);
 assert.equal(image.status, 200, "Foto hero harus tersedia");
-console.log("Hero publik, foto, dan akses admin: OK");
+console.log("Hero, About, foto, dan akses admin: OK");
