@@ -3,8 +3,8 @@
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, Droplets, Thermometer } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Droplets, Flame, Thermometer } from "lucide-react";
+import { OriginButton } from "@/components/ui/origin-button";
 
 export function CinematicHero() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -51,16 +51,25 @@ export function CinematicHero() {
               }
             );
 
-            gsap.from("[data-hero-badge]", {
-              y: 20,
+            // ponytail: badge bergerak mengitari foto 2.5D; ganti dengan posisi model 3D saat aset GLB tersedia.
+            gsap.fromTo("[data-hero-badge]", {
+              x: (index: number) => [-85, 90, -70][index],
+              y: (index: number) => [-45, -30, 65][index],
+              rotationY: (index: number) => [-20, 22, -16][index],
+              rotationX: 12,
+              scale: 0.8,
               opacity: 0,
-              duration: 0.7,
-              stagger: 0.14,
+            }, {
+              x: 0, y: 0, rotationX: 0, rotationY: 0, scale: 1, opacity: 1,
               ease: "power2.out",
+              stagger: 0.12,
               scrollTrigger: {
-                trigger: "[data-hero-visual]",
-                start: "top 65%",
-                once: true,
+                trigger: sectionRef.current,
+                start: "top top",
+                end: () => `+=${Math.round(window.innerHeight * 0.65)}`,
+                pin: true,
+                scrub: 1,
+                anticipatePin: 1,
               },
             });
           }, sectionRef);
@@ -84,9 +93,7 @@ export function CinematicHero() {
           <Link href="/" className="text-lg font-extrabold tracking-[-0.05em] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6E8143]">
             SASSY<span className="text-[#6E8143]">.</span>
           </Link>
-          <Button asChild variant="ghost" className="text-[#3C4730] hover:bg-[#EBEEE4] hover:text-[#2B3024] focus-visible:ring-[#6E8143]">
-            <Link href="/login">Masuk Admin <ArrowUpRight aria-hidden="true" /></Link>
-          </Button>
+          <OriginButton href="/login" variant="secondary" className="h-9 px-4">Masuk Admin</OriginButton>
         </header>
 
         <div className="flex flex-1 flex-col justify-center pt-10 pb-8 md:pt-14 md:pb-10">
@@ -98,9 +105,7 @@ export function CinematicHero() {
               SASSY memantau suhu, level air, dan pembakaran saat mengukus kain dan kulit.
             </p>
             <div data-hero-intro className="mt-7">
-              <Button asChild className="h-11 rounded-full bg-[#536431] px-6 text-sm text-white hover:bg-[#435127] focus-visible:ring-[#536431]">
-                <a href="#perangkat">Lihat perangkat <ArrowDownRight aria-hidden="true" /></a>
-              </Button>
+              <OriginButton href="#perangkat">Lihat perangkat</OriginButton>
             </div>
           </div>
         </div>
@@ -116,18 +121,28 @@ export function CinematicHero() {
               className="object-cover object-center"
             />
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1E291C]/60 via-transparent to-transparent" />
-            <div className="absolute bottom-5 left-5 text-xs font-medium text-white sm:bottom-7 sm:left-7">
+            <div className="absolute bottom-5 left-5 hidden text-xs font-medium text-white md:block md:bottom-7 md:left-7">
               SASSY · Sistem pengukusan kain &amp; kulit
             </div>
           </div>
 
-          <div data-hero-badge className="absolute -top-5 right-3 hidden items-center gap-2 rounded-xl border border-white/60 bg-[#F8F9F5]/90 px-4 py-3 text-xs font-semibold text-[#2B3024] shadow-[0_12px_28px_-16px_rgba(38,50,28,0.5)] backdrop-blur-md sm:flex sm:right-8 md:right-10 motion-reduce:transform-none">
-            <Thermometer aria-hidden="true" className="size-4 text-[#536431]" strokeWidth={1.8} />
-            Pemantauan suhu
+          <div data-hero-badge className="absolute -top-5 left-3 sm:left-8 md:-top-7 md:left-12">
+            <div className="flex items-center gap-2.5 rounded-2xl border border-white/70 bg-[#F8F9F5]/90 px-3.5 py-3 text-xs font-semibold text-[#2B3024] shadow-[0_16px_30px_-18px_rgba(26,39,20,0.6),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition-[transform,box-shadow,background-color] duration-300 hover:-translate-y-1 hover:rotate-[-2deg] hover:bg-white hover:shadow-[0_22px_36px_-18px_rgba(26,39,20,0.65)] md:px-4 md:py-3.5 motion-reduce:transition-none">
+              <Thermometer aria-hidden="true" className="size-4 text-[#536431]" strokeWidth={1.8} />
+              Pemantauan suhu
+            </div>
           </div>
-          <div data-hero-badge className="absolute -bottom-3 right-8 hidden items-center gap-2 rounded-xl border border-white/60 bg-[#F8F9F5]/90 px-4 py-3 text-xs font-semibold text-[#2B3024] shadow-[0_12px_28px_-16px_rgba(38,50,28,0.5)] backdrop-blur-md md:flex md:right-16 motion-reduce:transform-none">
-            <Droplets aria-hidden="true" className="size-4 text-[#536431]" strokeWidth={1.8} />
-            Level air terpantau
+          <div data-hero-badge className="absolute top-1/3 right-2 sm:right-8 md:-right-4">
+            <div className="flex items-center gap-2.5 rounded-2xl border border-white/70 bg-[#F8F9F5]/90 px-3.5 py-3 text-xs font-semibold text-[#2B3024] shadow-[0_16px_30px_-18px_rgba(26,39,20,0.6),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition-[transform,box-shadow,background-color] duration-300 hover:-translate-y-1 hover:rotate-[2deg] hover:bg-white hover:shadow-[0_22px_36px_-18px_rgba(26,39,20,0.65)] md:px-4 md:py-3.5 motion-reduce:transition-none">
+              <Flame aria-hidden="true" className="size-4 text-[#536431]" strokeWidth={1.8} />
+              Kendali burner
+            </div>
+          </div>
+          <div data-hero-badge className="absolute -bottom-4 left-8 sm:left-16 md:bottom-8 md:left-10">
+            <div className="flex items-center gap-2.5 rounded-2xl border border-white/70 bg-[#F8F9F5]/90 px-3.5 py-3 text-xs font-semibold text-[#2B3024] shadow-[0_16px_30px_-18px_rgba(26,39,20,0.6),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition-[transform,box-shadow,background-color] duration-300 hover:-translate-y-1 hover:rotate-[-2deg] hover:bg-white hover:shadow-[0_22px_36px_-18px_rgba(26,39,20,0.65)] md:px-4 md:py-3.5 motion-reduce:transition-none">
+              <Droplets aria-hidden="true" className="size-4 text-[#536431]" strokeWidth={1.8} />
+              Level air terpantau
+            </div>
           </div>
         </div>
       </section>
