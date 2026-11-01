@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Droplets, Flame, Thermometer } from "lucide-react";
 import { OriginButton } from "@/components/ui/origin-button";
 
+const badgeStyle = "flex items-center gap-2.5 rounded-2xl border border-white/70 bg-[#F8F9F5]/90 px-3.5 py-3 text-xs font-semibold text-[#2B3024] shadow-[0_16px_30px_-18px_rgba(26,39,20,0.6),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition-[transform,box-shadow,background-color] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-white hover:shadow-[0_26px_40px_-18px_rgba(26,39,20,0.6)] hover:[transform:translate3d(0,-9px,18px)_rotateX(5deg)_rotateY(-4deg)_scale(1.04)] md:px-4 md:py-3.5 motion-reduce:transition-none motion-reduce:hover:transform-none";
+
 export function CinematicHero() {
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -110,7 +112,7 @@ export function CinematicHero() {
           </div>
         </div>
 
-        <div id="perangkat" className="relative scroll-mt-8 pb-2 md:[perspective:1200px]">
+        <div id="perangkat" className="relative scroll-mt-8 pb-2 [perspective:1200px]">
           <div data-hero-visual className="relative h-[min(42dvh,450px)] min-h-[270px] overflow-hidden rounded-2xl bg-[#DCE0D4] shadow-[0_22px_50px_-30px_rgba(38,50,28,0.45)] md:transform-3d">
             <Image
               src="/images/login-hero.webp"
@@ -127,19 +129,19 @@ export function CinematicHero() {
           </div>
 
           <div data-hero-badge className="absolute -top-5 left-3 sm:left-8 md:-top-7 md:left-12">
-            <div className="flex items-center gap-2.5 rounded-2xl border border-white/70 bg-[#F8F9F5]/90 px-3.5 py-3 text-xs font-semibold text-[#2B3024] shadow-[0_16px_30px_-18px_rgba(26,39,20,0.6),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition-[transform,box-shadow,background-color] duration-300 hover:-translate-y-1 hover:rotate-[-2deg] hover:bg-white hover:shadow-[0_22px_36px_-18px_rgba(26,39,20,0.65)] md:px-4 md:py-3.5 motion-reduce:transition-none">
+            <div className={badgeStyle}>
               <Thermometer aria-hidden="true" className="size-4 text-[#536431]" strokeWidth={1.8} />
               Pemantauan suhu
             </div>
           </div>
           <div data-hero-badge className="absolute top-1/3 right-2 sm:right-8 md:-right-4">
-            <div className="flex items-center gap-2.5 rounded-2xl border border-white/70 bg-[#F8F9F5]/90 px-3.5 py-3 text-xs font-semibold text-[#2B3024] shadow-[0_16px_30px_-18px_rgba(26,39,20,0.6),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition-[transform,box-shadow,background-color] duration-300 hover:-translate-y-1 hover:rotate-[2deg] hover:bg-white hover:shadow-[0_22px_36px_-18px_rgba(26,39,20,0.65)] md:px-4 md:py-3.5 motion-reduce:transition-none">
+            <div className={badgeStyle}>
               <Flame aria-hidden="true" className="size-4 text-[#536431]" strokeWidth={1.8} />
               Kendali burner
             </div>
           </div>
-          <div data-hero-badge className="absolute -bottom-4 left-8 sm:left-16 md:bottom-8 md:left-10">
-            <div className="flex items-center gap-2.5 rounded-2xl border border-white/70 bg-[#F8F9F5]/90 px-3.5 py-3 text-xs font-semibold text-[#2B3024] shadow-[0_16px_30px_-18px_rgba(26,39,20,0.6),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition-[transform,box-shadow,background-color] duration-300 hover:-translate-y-1 hover:rotate-[-2deg] hover:bg-white hover:shadow-[0_22px_36px_-18px_rgba(26,39,20,0.65)] md:px-4 md:py-3.5 motion-reduce:transition-none">
+          <div data-hero-badge className="absolute -bottom-3 right-3 sm:right-8 md:bottom-8 md:right-10">
+            <div className={badgeStyle}>
               <Droplets aria-hidden="true" className="size-4 text-[#536431]" strokeWidth={1.8} />
               Level air terpantau
             </div>
