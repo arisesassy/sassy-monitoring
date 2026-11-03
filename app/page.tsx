@@ -4,6 +4,7 @@ import { AboutSassy } from "@/components/landing/about-sassy";
 import { ElectronicsFlow } from "@/components/landing/electronics-flow";
 import { KeyComponents } from "@/components/landing/key-components";
 import { Faq } from "@/components/landing/faq";
+import { Footer } from "@/components/landing/footer";
 
 export const metadata: Metadata = {
   title: "SASSY | Pengukusan Terukur",
@@ -12,12 +13,15 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <main className="min-h-[100dvh] overflow-x-clip bg-[#F8F9F5] text-[#2B3024]">
-      <CinematicHero />
-      <AboutSassy />
-      <ElectronicsFlow />
-      <KeyComponents />
-      <Faq />
-    </main>
+    <>
+      <main className="min-h-[100dvh] overflow-x-clip bg-[#F8F9F5] text-[#2B3024]">
+        <CinematicHero />
+        <AboutSassy />
+        <ElectronicsFlow />
+        <KeyComponents />
+        <Faq />
+      </main>
+      <Footer />
+    </>
   );
 }

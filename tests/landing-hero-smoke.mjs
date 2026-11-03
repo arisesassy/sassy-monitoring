@@ -27,8 +27,17 @@ assert.match(html, /id="faq"/);
 assert.equal((html.match(/<details\b/g) ?? []).length, 4, "FAQ berisi empat pertanyaan native");
 assert.match(html, /Landing page terbuka untuk umum, sedangkan dashboard hanya untuk admin/);
 assert.ok(html.indexOf("Bagian penting di balik") < html.indexOf("Pertanyaan yang sering"), "FAQ mengikuti komponen");
+assert.match(html, /<footer\b/);
+assert.match(html, /Sekolah Vokasi/);
+assert.match(html, /IPB University/);
+assert.match(html, /Bogor, Jawa Barat, Indonesia/);
+assert.match(html, /aria-label="Navigasi footer"/);
+for (const anchor of ["perangkat", "tentang", "skema", "komponen", "faq"]) {
+  assert.match(html, new RegExp(`href="#${anchor}"`));
+}
+assert.ok(html.indexOf("Pertanyaan yang sering") < html.indexOf("<footer"), "Footer mengikuti FAQ");
 assert.doesNotMatch(html, /ArrowDownRight|ArrowUpRight/);
 assert.doesNotMatch(html, /Sobers|Days Sober|App Store/);
 const image = await fetch(`${origin}/images/login-hero.webp`);
 assert.equal(image.status, 200, "Foto hero harus tersedia");
-console.log("Hero, About, skema konseptual, komponen, FAQ, foto, dan akses admin: OK");
+console.log("Hero, About, skema konseptual, komponen, FAQ, footer, foto, dan akses admin: OK");
