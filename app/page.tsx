@@ -4,6 +4,7 @@ import { AboutSassy } from "@/components/landing/about-sassy";
 import { ElectronicsFlow } from "@/components/landing/electronics-flow";
 import { KeyComponents } from "@/components/landing/key-components";
 import { Faq } from "@/components/landing/faq";
+import { BottomCta } from "@/components/landing/bottom-cta";
 import { Footer } from "@/components/landing/footer";
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default function Home() {
         <ElectronicsFlow />
         <KeyComponents />
         <Faq />
+        <BottomCta />
       </main>
       <Footer />
     </>
