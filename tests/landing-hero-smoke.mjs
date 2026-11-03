@@ -31,6 +31,8 @@ assert.match(html, /<footer\b/);
 assert.match(html, /Sekolah Vokasi/);
 assert.match(html, /IPB University/);
 assert.match(html, /Bogor, Jawa Barat, Indonesia/);
+assert.match(html, /href="https:\/\/www\.instagram\.com\/arise\.sassy\/"[^>]*rel="noopener noreferrer"/);
+assert.match(html, /@arise\.sassy/);
 assert.match(html, /aria-label="Navigasi footer"/);
 for (const anchor of ["perangkat", "tentang", "skema", "komponen", "faq"]) {
   assert.match(html, new RegExp(`href="#${anchor}"`));

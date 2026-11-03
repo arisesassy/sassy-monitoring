@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const links = [
   { href: "#perangkat", label: "Perangkat" },
@@ -20,6 +21,10 @@ export function Footer() {
             <p className="mt-6 text-base leading-relaxed text-[#E4EBD9]">
               Sistem pengukusan kain dan kulit dengan pemantauan suhu, level air, dan pembakaran.
             </p>
+            <a href="https://www.instagram.com/arise.sassy/" target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex items-center gap-3 rounded-full border border-[#82916C] px-4 py-2.5 text-sm text-[#F8F9F5] transition-colors hover:border-[#B8CB92] hover:bg-[#536431] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F8F9F5]">
+              <Image src="/images/instagram.svg" alt="" width={20} height={20} />
+              @arise.sassy
+            </a>
           </div>
 
           <div>
