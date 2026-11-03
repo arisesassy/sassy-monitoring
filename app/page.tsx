@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CinematicHero } from "@/components/ui/cinematic-landing-hero";
 import { AboutSassy } from "@/components/landing/about-sassy";
 import { ElectronicsFlow } from "@/components/landing/electronics-flow";
+import { KeyComponents } from "@/components/landing/key-components";
 
 export const metadata: Metadata = {
   title: "SASSY | Pengukusan Terukur",
@@ -14,6 +15,7 @@ export default function Home() {
       <CinematicHero />
       <AboutSassy />
       <ElectronicsFlow />
+      <KeyComponents />
     </main>
   );
 }
