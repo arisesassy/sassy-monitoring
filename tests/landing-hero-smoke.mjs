@@ -1,10 +1,18 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 const origin = process.env.SASSY_TEST_URL ?? "http://localhost:3000";
 const page = await fetch(origin);
 assert.equal(page.status, 200, "Beranda harus bisa dibuka tanpa login");
 const html = await page.text();
 assert.match(html, /Pengukusan lebih/);
+assert.match(html, /home-hero\.webp/);
+assert.match(html, /Visual konseptual alat pengukusan SASSY/);
+assert.match(html, /data-hero-scene/);
+const heroSource = await readFile(new URL("../components/ui/cinematic-landing-hero.tsx", import.meta.url), "utf8");
+assert.match(heroSource, /pin: true/);
+assert.match(heroSource, /\.to\("\[data-hero-scene\]", \{[^}]*opacity: 0/);
+assert.match(heroSource, /prefers-reduced-motion: no-preference/);
 assert.match(html, /login-hero\.webp/);
 assert.match(html, /href="\/login"/);
 assert.equal((html.match(/data-hero-badge/g) ?? []).length, 3, "Tiga badge alat tersedia");
@@ -46,4 +54,6 @@ assert.doesNotMatch(html, /ArrowDownRight|ArrowUpRight/);
 assert.doesNotMatch(html, /Sobers|Days Sober|App Store/);
 const image = await fetch(`${origin}/images/login-hero.webp`);
 assert.equal(image.status, 200, "Foto hero harus tersedia");
+const heroImage = await fetch(`${origin}/images/home-hero.webp`);
+assert.equal(heroImage.status, 200, "Visual alat hero harus tersedia");
 console.log("Hero, About, skema konseptual, komponen, FAQ, CTA, footer, foto, dan akses admin: OK");
