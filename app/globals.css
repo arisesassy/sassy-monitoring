@@ -173,18 +173,24 @@
 
 /* Hero reveal: content stays visible for reduced-motion and no-JS fallbacks. */
 @media (prefers-reduced-motion: no-preference) {
-  [data-hero] [data-hero-intro],
-  [data-hero] [data-hero-scene] {
+  [data-hero] [data-hero-intro] {
     opacity: 0;
   }
+  [data-hero] [data-hero-scene] { transform: translateY(115vh); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   [data-hero-scene] {
-    position: static !important;
+    position: relative !important;
     margin-top: 1.5rem;
     padding-inline: 0 !important;
+    padding-block: 3rem;
   }
+  [data-hero-stage] { border-radius: 24px; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  [data-hero-badge] > div { background: #1f281a; backdrop-filter: none; }
 }
 
 .hero-stage {
