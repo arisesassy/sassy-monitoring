@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -58,8 +59,15 @@ export default function LoginPage() {
     <main className="min-h-[100dvh] bg-[#FAFAF7] text-[#2B3024]">
       <div className="mx-auto grid min-h-[100dvh] max-w-[1600px] grid-cols-1 lg:grid-cols-2">
         <section className="flex min-w-0 flex-col px-6 py-8 sm:px-12 lg:px-16 lg:py-10">
-          <header className="flex items-center gap-2.5">
+          <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <p className="text-sm font-semibold tracking-tight">SASSY Monitoring</p>
+            <Link
+              href="/"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-xs font-medium text-[#536431] transition-colors hover:bg-[#E8ECDD] active:bg-[#DCE0D4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6E8143]"
+            >
+              <ArrowLeft aria-hidden="true" className="size-4" />
+              Kembali ke beranda
+            </Link>
           </header>
 
           <div className="mx-auto my-auto w-full max-w-[360px] py-16">
