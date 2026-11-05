@@ -12,7 +12,7 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-const badgeStyle = "flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white/20 bg-[#1F281A]/80 px-3 py-2 text-[10px] font-semibold text-[#F8F9F5] shadow-[0_18px_36px_-18px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-xl md:justify-start md:px-4 md:py-2.5 md:text-xs";
+const badgeStyle = "flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white/20 bg-[#1F281A]/80 px-3 py-3 text-xs font-semibold text-[#F8F9F5] shadow-[0_18px_36px_-18px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-xl md:justify-start md:gap-3 md:px-6 md:py-4 md:text-lg [&>svg]:size-4 [&>svg]:md:size-6";
 
 export function CinematicHero() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -143,27 +143,24 @@ export function CinematicHero() {
               sizes="(min-width: 1556px) 1400px, 90vw"
               className="object-contain px-1 py-3 md:px-4 md:py-5"
             />
-            <span className="absolute right-3 bottom-0 text-[10px] font-medium text-[#DCE8C8] md:right-5 md:text-[11px]">
-              Visual konseptual
-            </span>
           </div>
 
           <div className="mt-2 grid grid-cols-2 gap-2 md:mt-0 md:block">
             <div data-hero-badge className="md:absolute md:-top-4 md:left-8">
               <div className={badgeStyle}>
-                <Thermometer aria-hidden="true" className="size-3.5 shrink-0 text-[#C7D6A8] md:size-4" strokeWidth={1.8} />
+                <Thermometer aria-hidden="true" className="shrink-0 text-[#C7D6A8]" strokeWidth={1.8} />
                 Pemantauan suhu
               </div>
             </div>
             <div data-hero-badge className="md:absolute md:top-[6%] md:-right-4">
               <div className={badgeStyle}>
-                <Flame aria-hidden="true" className="size-3.5 shrink-0 text-[#C7D6A8] md:size-4" strokeWidth={1.8} />
+                <Flame aria-hidden="true" className="shrink-0 text-[#C7D6A8]" strokeWidth={1.8} />
                 Kendali burner
               </div>
             </div>
             <div data-hero-badge className="col-span-2 md:absolute md:-bottom-4 md:left-16">
               <div className={badgeStyle}>
-                <Droplets aria-hidden="true" className="size-3.5 shrink-0 text-[#C7D6A8] md:size-4" strokeWidth={1.8} />
+                <Droplets aria-hidden="true" className="shrink-0 text-[#C7D6A8]" strokeWidth={1.8} />
                 Level air terpantau
               </div>
             </div>
