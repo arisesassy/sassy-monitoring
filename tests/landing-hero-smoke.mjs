@@ -43,11 +43,16 @@ assert.ok(html.indexOf("Pengukusan lebih") < html.indexOf("Satu alat. Proses yan
 assert.match(html, /id="skema"/);
 assert.match(html, /ESP32-S3/);
 assert.match(html, /bukan diagram rangkaian atau panduan wiring/);
-assert.ok(html.indexOf("Satu alat. Proses yang bisa") < html.indexOf("Dari alat ke"), "Skema mengikuti About");
+assert.ok(html.indexOf("Satu alat. Proses yang bisa") < html.indexOf("Arsitektur sistem."), "Skema mengikuti About");
+assert.match(html, /id="skematik"/);
+assert.match(html, /Skematik lengkap sedang disiapkan\./);
+assert.equal((html.match(/aria-label="Keterangan /g) ?? []).length, 5, "Lima blok arsitektur tersedia");
+assert.match(html, /FastAPI Server/);
+assert.match(html, /data-architecture/);
 assert.match(html, /id="komponen"/);
 assert.match(html, /Bagian penting di balik/);
 assert.match(html, /model sensor dan rincian rangkaian menunggu dokumentasi final/);
-assert.ok(html.indexOf("Dari alat ke") < html.indexOf("Bagian penting di balik"), "Komponen mengikuti skema");
+assert.ok(html.indexOf("Skematik perangkat") < html.indexOf("Bagian penting di balik"), "Komponen mengikuti skematik");
 assert.match(html, /id="faq"/);
 assert.equal((html.match(/<details\b/g) ?? []).length, 4, "FAQ berisi empat pertanyaan native");
 assert.match(html, /Landing page terbuka untuk umum, sedangkan dashboard hanya untuk admin/);
