@@ -31,13 +31,17 @@ export function ElectronicsFlow() {
   useEffect(() => {
     const element = container.current;
     if (!element) return;
+    let disposed = false;
     const measure = () => {
+      if (disposed || !element.isConnected) return;
+      const endpoints = blocks.map((_, index) => nodes.current[index]);
+      if (endpoints.some((node) => !node?.isConnected)) return;
       const box = element.getBoundingClientRect();
       const mobile = window.innerWidth < 768;
       setMobile(mobile);
       setPaths(connections.map(({ from, to }) => {
-        const a = nodes.current[from]!.getBoundingClientRect();
-        const b = nodes.current[to]!.getBoundingClientRect();
+        const a = endpoints[from]!.getBoundingClientRect();
+        const b = endpoints[to]!.getBoundingClientRect();
         const x1 = a.left - box.left + a.width / 2;
         const y1 = a.top - box.top + a.height / 2;
         const x2 = b.left - box.left + b.width / 2;
@@ -58,7 +62,7 @@ export function ElectronicsFlow() {
     const intersection = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting));
     intersection.observe(element);
     window.addEventListener("resize", measure);
-    return () => { resize.disconnect(); intersection.disconnect(); window.removeEventListener("resize", measure); };
+    return () => { disposed = true; resize.disconnect(); intersection.disconnect(); window.removeEventListener("resize", measure); };
   }, []);
 
   return (
