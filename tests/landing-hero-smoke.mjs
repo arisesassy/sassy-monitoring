@@ -56,6 +56,11 @@ assert.doesNotMatch(architectureSource, /connections\[index\]\.label|↔|→|<ci
 assert.match(architectureSource, /Math\.abs\(to - from\) > 1/);
 assert.match(architectureSource, /const bendY = Math\.max\(startY, endY\) \+ 80/);
 assert.doesNotMatch(architectureSource, /ScrollTrigger|pin: true/);
+assert.doesNotMatch(architectureSource, /pathLength="100"|stroke="#899B65"/);
+assert.match(architectureSource, /node\.getTotalLength\(\)/);
+assert.match(architectureSource, /`24 \$\{length\}`/);
+assert.match(architectureSource, /strokeWidth="2\.5" strokeLinecap="round"/);
+assert.match(architectureSource, /stroke-dashoffset: var\(--beam-lap\)/);
 assert.match(html, /id="komponen"/);
 assert.match(html, /Bagian penting di balik/);
 assert.match(html, /model sensor dan rincian rangkaian menunggu dokumentasi final/);

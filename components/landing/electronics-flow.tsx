@@ -73,8 +73,18 @@ export function ElectronicsFlow() {
               <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
                 {paths.map((path, index) => <g key={index}>
                   <path d={path} fill="none" stroke="#C5CEB7" strokeWidth="1.5" />
-                  <path className="architecture-pulse" d={path} pathLength="100" fill="none" stroke="#6E8143" strokeWidth="3" strokeDasharray="9 91" style={{ animationDelay: `${index * -0.7}s` }} />
-                  {connections[index].both && <path className="architecture-pulse architecture-reverse" d={path} pathLength="100" fill="none" stroke="#899B65" strokeWidth="2" strokeDasharray="7 93" style={{ animationDelay: `${index * -0.9}s` }} />}
+                  {(connections[index].both ? [false, true] : [false]).map((reverse) => <path
+                    key={String(reverse)}
+                    ref={(node) => {
+                      if (!node) return;
+                      const length = node.getTotalLength();
+                      node.setAttribute("stroke-dasharray", `24 ${length}`);
+                      node.style.setProperty("--beam-lap", String(-(length + 24)));
+                    }}
+                    className={`architecture-pulse${reverse ? " architecture-reverse" : ""}`}
+                    d={path} fill="none" stroke="#6E8143" strokeWidth="2.5" strokeLinecap="round"
+                    style={{ animationDelay: `${index * -0.7 - (reverse ? 1.75 : 0)}s` }}
+                  />)}
                 </g>)}
               </svg>
               {blocks.map((block, index) => <Popover.Root key={block.name} open={active === index} onOpenChange={(open) => setActive(open ? index : null)} modal={false}>
@@ -111,7 +121,7 @@ export function ElectronicsFlow() {
         </div>
       </section>
       <style>{`
-        @keyframes architecture-dash { to { stroke-dashoffset: -100; } }
+        @keyframes architecture-dash { to { stroke-dashoffset: var(--beam-lap); } }
         .architecture-pulse { animation: architecture-dash 3.5s linear infinite; animation-play-state: paused; }
         .architecture-reverse { animation-direction: reverse; }
         [data-visible="true"] .architecture-pulse { animation-play-state: running; }
