@@ -170,3 +170,27 @@
   -webkit-appearance: none;
   appearance: none;
 }
+
+/* Hero reveal: content stays visible for reduced-motion and no-JS fallbacks. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-hero] [data-hero-intro],
+  [data-hero] [data-hero-scene] {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-hero-scene] {
+    position: static !important;
+    margin-top: 1.5rem;
+    padding-inline: 0 !important;
+  }
+}
+
+.hero-stage {
+  background:
+    radial-gradient(120% 140% at 50% 18%, #53643f 0%, #35422a 48%, #20291b 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 36px 70px -38px rgba(31, 39, 26, 0.65);
+}
