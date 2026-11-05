@@ -34,14 +34,18 @@ export function ElectronicsFlow() {
     let disposed = false;
     const measure = () => {
       if (disposed || !element.isConnected) return;
-      const endpoints = blocks.map((_, index) => nodes.current[index]);
-      if (endpoints.some((node) => !node?.isConnected)) return;
+      const endpoints = blocks.map((_, index) => {
+        const node = nodes.current[index];
+        return node?.isConnected ? node.getBoundingClientRect() : null;
+      });
+      if (endpoints.some((box) => box === null)) return;
       const box = element.getBoundingClientRect();
       const mobile = window.innerWidth < 768;
       setMobile(mobile);
-      setPaths(connections.map(({ from, to }) => {
-        const a = endpoints[from]!.getBoundingClientRect();
-        const b = endpoints[to]!.getBoundingClientRect();
+      const nextPaths = connections.map(({ from, to }) => {
+        const a = endpoints[from];
+        const b = endpoints[to];
+        if (!a || !b) return "";
         const x1 = a.left - box.left + a.width / 2;
         const y1 = a.top - box.top + a.height / 2;
         const x2 = b.left - box.left + b.width / 2;
@@ -53,7 +57,8 @@ export function ElectronicsFlow() {
           return `M ${x1} ${startY} C ${x1} ${bendY}, ${x2} ${bendY}, ${x2} ${endY}`;
         }
         return `M ${a.right - box.left} ${y1} L ${b.left - box.left} ${y2}`;
-      }));
+      });
+      setPaths(nextPaths);
     };
     measure();
     const resize = new ResizeObserver(measure);
@@ -93,7 +98,7 @@ export function ElectronicsFlow() {
               </svg>
               {blocks.map((block, index) => <Popover.Root key={block.name} open={active === index} onOpenChange={(open) => setActive(open ? index : null)} modal={false}>
                 <Popover.Trigger asChild>
-                  <button ref={(node) => { nodes.current[index] = node; }} type="button" aria-label={`Keterangan ${block.name}`} className={`relative z-20 flex min-h-40 w-full flex-col items-center justify-center gap-2 rounded-xl border px-3 py-5 text-center transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#536431] ${active === index ? "border-[#536431] bg-[#536431] text-[#F8F9F5]" : "border-[#CED5C3] bg-[#F8F9F5] text-[#283222] hover:border-[#6E8143] hover:bg-[#E4EAD9]"}`}>
+                  <button ref={(node) => { nodes.current[index] = node; }} type="button" aria-label={`Keterangan ${block.name}`} className={`relative z-20 flex min-h-40 w-full flex-col items-center justify-center gap-2 rounded-xl border px-3 py-5 text-center transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#536431]  cursor-pointer ${active === index ? "border-[#536431] bg-[#536431] text-[#F8F9F5]" : "border-[#CED5C3] bg-[#F8F9F5] text-[#283222] hover:border-[#6E8143] hover:bg-[#E4EAD9]"}`}>
                     <block.icon aria-hidden="true" className="size-7" strokeWidth={1.5} />
                     <span className="text-sm font-semibold sm:text-base">{block.name}</span>
                     <span className="text-xs opacity-80">{block.caption}</span>
